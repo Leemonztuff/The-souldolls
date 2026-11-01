@@ -1,0 +1,6 @@
+{
+  "name": "SoulDolls",
+  "description": "Un juego de exploración en tercera persona 2.5D pixel-art con Three.js",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
