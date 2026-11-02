@@ -299,7 +299,16 @@ export default function App() {
       handleHealTeam,
       hasWaterSoul,
       handleWaterQuestReward,
-      handleItemReward
+      handleItemReward,
+      () => ({
+        team: teamRef.current,
+        box: boxRef.current,
+        bag: bagRef.current,
+        starterChosen: starterChosen,
+        discoveredSouls: discoveredSouls,
+        discoveredGrass: discoveredGrass,
+        openedChests: chestsRef.current.filter(c => c.opened).map(c => c.id)
+      })
     );
 
     engine.setActiveSlot(activeSlot);

@@ -93,6 +93,10 @@ export function getTerrainHeight(x: number, z: number): number {
   return rawH;
 }
 
+import seedrandom from 'seedrandom';
+
+// ... (other imports)
+
 export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera): {
   soulDolls: SoulDoll[];
   spirits: Spirit[];

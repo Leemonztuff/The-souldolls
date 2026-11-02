@@ -43,6 +43,9 @@ export class SaveManager {
       const saved = localStorage.getItem(this.getSlotKey(slot));
       if (!saved) return null;
       const data = JSON.parse(saved);
+      if (typeof data.version !== 'number' || !Array.isArray(data.team)) {
+        throw new Error('Invalid save data schema');
+      }
       return this.migrate(data);
     } catch (e) {
       logger.error(`Failed to load slot ${slot}`, e);
@@ -57,9 +60,13 @@ export class SaveManager {
   public static importSave(slot: number, json: string) {
     try {
       const data = JSON.parse(json);
+      if (typeof data.version !== 'number' || !Array.isArray(data.team)) {
+        throw new Error('Invalid imported save data schema');
+      }
       this.saveToSlot(slot, data);
     } catch (e) {
       logger.error('Failed to import save', e);
+      throw e; // Rethrow to allow UI to catch and alert
     }
   }
 

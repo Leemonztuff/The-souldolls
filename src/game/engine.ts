@@ -102,6 +102,8 @@ export class GameEngine {
   private hasWaterSoulFn?: () => boolean;
   private onWaterQuestReward?: () => void;
   private onItemReward?: (items: { id: ItemId; name: string; count: number }[]) => void;
+  private getSaveData: () => Partial<GameSaveData>;
+
 
   private activeDialogue: { name: string; text: string } | null = null;
   private dialogueIndex: number = 0;
@@ -125,7 +127,8 @@ export class GameEngine {
     onHealTeam?: () => void,
     hasWaterSoulFn?: () => boolean,
     onWaterQuestReward?: () => void,
-    onItemReward?: (items: { id: ItemId; name: string; count: number }[]) => void
+    onItemReward?: (items: { id: ItemId; name: string; count: number }[]) => void,
+    getSaveData?: () => Partial<GameSaveData>
   ) {
     this.container = container;
     this.onStateChange = onStateChange;
@@ -136,6 +139,8 @@ export class GameEngine {
     this.hasWaterSoulFn = hasWaterSoulFn;
     this.onWaterQuestReward = onWaterQuestReward;
     this.onItemReward = onItemReward;
+    this.getSaveData = getSaveData || (() => ({}));
+
 
     // 1. Renderer setup
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
@@ -169,7 +174,7 @@ export class GameEngine {
     this.initStateMachine();
 
     // 4. Build world & player
-    const world = buildWorld(this.scene, this.camera);
+    const world = buildWorld(this.scene, this.camera, 'fixed-seed');
     this.soulDolls = world.soulDolls;
     this.trees = world.trees;
     this.collisionBoxes = world.collisionBoxes;
@@ -222,7 +227,7 @@ export class GameEngine {
     window.addEventListener('resize', this.onWindowResize);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
-        this.saveGame();
+        // this.saveGame();
       }
     });
 
@@ -293,79 +298,87 @@ export class GameEngine {
   }
 
   public saveGame() {
+    const data = this.getSaveData();
     const pos = this.player ? { x: this.player.state.x, z: this.player.state.z } : { x: 0, z: 0 };
     SaveManager.saveToSlot(this.activeSlot, {
-      team: [], 
-      box: [],
-      bag: [],
-      gold: this.gold,
+      ...data,
       hp: this.hp,
+      gold: this.gold,
       questState: this.questState,
       playerPos: pos,
-      starterChosen: true,
-      openedChests: this.chests.filter(c => c.opened).map(c => c.id),
-      discoveredSouls: {},
-      discoveredGrass: [],
-    });
+    } as GameSaveData);
   }
 
+  private handleKeyDown = (e: KeyboardEvent) => {
+    if (e.code === 'F2') {
+      const cmd = prompt('Debug command: tp x z | encuentro [mob] | darNivel n | darObjeto n | curar | semilla n | noche/dia | guardar/cargar');
+      if (cmd) {
+        this.debugManager.handleCommand(cmd);
+      }
+    }
+    
+    if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+      if (this.stateMachine.getState() === 'title') {
+        this.stateMachine.transition('world');
+      }
+    }
+
+    if (e.code === 'KeyT') {
+      this.autoCycle = false;
+      this.targetTimeOfDay = this.targetTimeOfDay === 0 ? 1 : 0;
+      this.isTransitioning = true;
+      this.transitionTimer = 0;
+      this.notifyState();
+    }
+
+    if (e.code === 'KeyC') {
+      this.autoCycle = !this.autoCycle;
+      this.notifyState();
+    }
+
+    if (e.code === 'KeyM') {
+      audioManager.toggleMute();
+    }
+
+    if (e.code === 'KeyE' && this.stateMachine.getState() === 'world') {
+      this.handleInteraction();
+    }
+
+    if (e.code === 'Space' && this.stateMachine.getState() === 'world' && !this.activeDialogue) {
+      this.handleAttack();
+    }
+
+    if (e.code === 'KeyB' && this.stateMachine.getState() === 'world' && !this.activeDialogue) {
+      this.triggerGrassEncounter('RUNIKA');
+    }
+  };
+
+  private handleMouseDown = () => {
+    if (this.stateMachine.getState() === 'title') {
+      this.stateMachine.transition('world');
+    }
+  };
+
+  private handleTouchStart = () => {
+    if (this.stateMachine.getState() === 'title') {
+      this.stateMachine.transition('world');
+    }
+  };
+
+  private handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') {
+      // this.saveGame();
+    }
+  };
+
   private initEventListeners() {
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'F2') {
-        const cmd = prompt('Debug command: tp x z | encuentro [mob] | darNivel n | darObjeto n | curar | semilla n | noche/dia | guardar/cargar');
-        if (cmd) {
-          this.debugManager.handleCommand(cmd);
-        }
-      }
-      
-      if (['Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
-
-        if (this.stateMachine.getState() === 'title') {
-          this.stateMachine.transition('world');
-        }
-      }
-
-      if (e.code === 'KeyT') {
-        this.autoCycle = false;
-        this.targetTimeOfDay = this.targetTimeOfDay === 0 ? 1 : 0;
-        this.isTransitioning = true;
-        this.transitionTimer = 0;
-        this.notifyState();
-      }
-
-      if (e.code === 'KeyC') {
-        this.autoCycle = !this.autoCycle;
-        this.notifyState();
-      }
-
-      if (e.code === 'KeyM') {
-        audioManager.toggleMute();
-      }
-
-      if (e.code === 'KeyE' && this.stateMachine.getState() === 'world') {
-        this.handleInteraction();
-      }
-
-      if (e.code === 'Space' && this.stateMachine.getState() === 'world' && !this.activeDialogue) {
-        this.handleAttack();
-      }
-
-      if (e.code === 'KeyB' && this.stateMachine.getState() === 'world' && !this.activeDialogue) {
-        this.triggerGrassEncounter('RUNIKA');
-      }
-    });
-
+    window.addEventListener('keydown', this.handleKeyDown);
     const dom = this.renderer.domElement;
-    dom.addEventListener('mousedown', () => {
-      if (this.stateMachine.getState() === 'title') {
-        this.stateMachine.transition('world');
-      }
-    });
-    dom.addEventListener('touchstart', () => {
-      if (this.stateMachine.getState() === 'title') {
-        this.stateMachine.transition('world');
-      }
-    }, { passive: true });
+    dom.addEventListener('mousedown', this.handleMouseDown);
+    dom.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+    
+    window.addEventListener('resize', this.onWindowResize);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   private handleInteraction() {
@@ -414,7 +427,7 @@ export class GameEngine {
           text: '¡Las aguas sagradas han restaurado por completo tu equipo y te han otorgado una Poción Ancestral extra!',
         };
         this.currentNPC = null;
-        this.saveGame();
+        // this.saveGame();
         this.notifyState();
         return;
       }
@@ -466,7 +479,7 @@ export class GameEngine {
         }
 
         audioManager.playCollectSoul();
-        this.saveGame();
+        // this.saveGame();
         this.notifyState();
         return;
       }
@@ -493,7 +506,7 @@ export class GameEngine {
             this.onChestReward(itemsGiven, chest.rewardAmount);
           }
 
-          this.saveGame();
+          // this.saveGame();
           this.notifyState();
           return;
         }
@@ -531,7 +544,7 @@ export class GameEngine {
             en.alive = false;
             this.gold += 25;
             audioManager.playCollectSoul();
-            this.saveGame();
+            // this.saveGame();
           }
         }
       }
@@ -889,6 +902,7 @@ export class GameEngine {
     } else {
       this.renderer.render(this.scene, this.camera);
     }
+    this.debugManager.update(this.renderer, this.scene, this.trees, this.grassPatches);
   }
 
   public triggerGrassEncounter(forcedMobName?: string) {
@@ -917,14 +931,14 @@ export class GameEngine {
     this.player.state.rotation = 0;
     this.hp = this.maxHp;
     this.graceSteps = 10;
-    this.saveGame();
+    // this.saveGame();
     this.notifyState();
   }
 
   public onCombatVictory(gold: number) {
     this.gold += gold;
     this.graceSteps = 8;
-    this.saveGame();
+    // this.saveGame();
     this.stateMachine.transition('world');
     this.notifyState();
     eventBus.emit('combatEnded', { victory: true });
@@ -1030,6 +1044,17 @@ export class GameEngine {
   public destroy() {
     this.gameLoop.stop();
     window.removeEventListener('resize', this.onWindowResize);
+    window.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    
+    const dom = this.renderer.domElement;
+    dom.removeEventListener('mousedown', this.handleMouseDown);
+    dom.removeEventListener('touchstart', this.handleTouchStart);
+    
+    if (this.container && this.container.contains(dom)) {
+        this.container.removeChild(dom);
+    }
+    
     disposeTextures();
     if (this.composer) {
       this.composer.dispose();
