@@ -205,16 +205,11 @@ export const Minimap: React.FC<MinimapProps> = ({
 
   return (
     <div className="relative pointer-events-auto select-none flex flex-col items-center">
-      <div className="relative shadow-[0_0_15px_rgba(232,184,74,0.3)] rounded-full">
+      <div className="relative p-0.5 rounded-full border-2 border-[#b4862a] shadow-[0_0_16px_rgba(180,134,42,0.35)] bg-[#0c0817]">
         <canvas ref={canvasRef} className="w-[84px] h-[84px] sm:w-[110px] sm:h-[110px] block rounded-full" />
-        {/* Purple corner accents around minimap container */}
-        <div className="absolute -top-1 -left-1 w-2 sm:w-2.5 h-2 sm:h-2.5 bg-[#9B6BFF] border border-[#c084fc]" />
-        <div className="absolute -top-1 -right-1 w-2 sm:w-2.5 h-2 sm:h-2.5 bg-[#9B6BFF] border border-[#c084fc]" />
-        <div className="absolute -bottom-1 -left-1 w-2 sm:w-2.5 h-2 sm:h-2.5 bg-[#9B6BFF] border border-[#c084fc]" />
-        <div className="absolute -bottom-1 -right-1 w-2 sm:w-2.5 h-2 sm:h-2.5 bg-[#9B6BFF] border border-[#c084fc]" />
       </div>
-      <div className="mt-0.5 sm:mt-1 px-1.5 py-0.5 bg-[#14101C]/90 border border-[#8A6A3B] rounded text-[7px] sm:text-[8px] font-pixel text-[#F2E6C9] shadow-sm tracking-tighter">
-        X:{Math.round(playerPos.x)} Z:{Math.round(playerPos.z)}
+      <div className="mt-1 px-2 py-0.5 bg-[#0e091c]/95 border border-[#2b1f40] rounded-xs text-[7px] font-pixel text-[#cbd5e1] shadow-sm tabular-nums">
+        X: {Math.round(playerPos.x)} · Z: {Math.round(playerPos.z)}
       </div>
     </div>
   );

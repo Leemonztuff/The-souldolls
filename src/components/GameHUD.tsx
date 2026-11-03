@@ -28,6 +28,7 @@ interface GameHUDProps {
   discoveredGrass?: number[];
   fountains?: FountainData[];
   onOpenLuminadex?: () => void;
+  onOpenSoulBag?: (tab?: 'team' | 'bag' | 'box') => void;
   onTriggerCombatDemo?: () => void;
   onVirtualKey?: (code: string, isDown: boolean) => void;
   onTriggerInteract?: () => void;
@@ -64,6 +65,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
     { x: 8, z: 72, radius: 3.5 },
   ],
   onOpenLuminadex,
+  onOpenSoulBag,
   onTriggerCombatDemo,
   onVirtualKey,
   onTriggerInteract,
@@ -74,7 +76,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 }) => {
   const [showControlsHint, setShowControlsHint] = useState(true);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [showInventory, setShowInventory] = useState(false);
   const [notification, setNotification] = useState<SoulDoll | null>(null);
   const [fadingOut, setFadingOut] = useState(false);
 
@@ -96,20 +97,21 @@ export const GameHUD: React.FC<GameHUDProps> = ({
     }
   }, [lastCollectedSoul]);
 
-  // Inventory and Luminadex toggle via keys
+  // Inventory, Team, and Luminadex toggle via keys
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState !== 'playing') return;
       if (e.code === 'KeyI' && !activeDialogue) {
-        setShowInventory(prev => !prev);
-      }
-      if (e.code === 'KeyJ' && !activeDialogue && onOpenLuminadex) {
+        onOpenSoulBag?.('bag');
+      } else if (e.code === 'KeyU' && !activeDialogue) {
+        onOpenSoulBag?.('team');
+      } else if (e.code === 'KeyJ' && !activeDialogue && onOpenLuminadex) {
         onOpenLuminadex();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, activeDialogue, onOpenLuminadex]);
+  }, [gameState, activeDialogue, onOpenLuminadex, onOpenSoulBag]);
 
   // Typewriter effect with typewriter blip audio
   useEffect(() => {
@@ -149,87 +151,104 @@ export const GameHUD: React.FC<GameHUDProps> = ({
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between overflow-hidden font-pixel select-none">
       
-      {/* TITLE SCREEN */}
+      {/* TITLE SCREEN (Unslop Retro Grimoire Aesthetic) */}
       {gameState === 'title' && (
         <div
-          className={`absolute inset-0 pointer-events-auto bg-[#0b1026]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 transition-opacity duration-600 ${
+          className={`absolute inset-0 pointer-events-auto bg-[#07050d]/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-50 transition-opacity duration-600 ${
             fadingOut ? 'opacity-0' : 'opacity-100'
           }`}
         >
-          <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
-            <div className="flex justify-center mb-2">
-              <span className="text-5xl animate-pulse">✨</span>
-            </div>
-            
-            <div className="space-y-3">
-              <h1 className="text-3xl md:text-5xl font-black tracking-widest text-[#E8B84A] drop-shadow-[0_4px_16px_rgba(232,184,74,0.5)]">
+          <div className="max-w-xl mx-auto space-y-6 animate-fade-in border-2 border-[#b4862a] bg-[#110c1f] p-6 sm:p-8 rounded-xs shadow-[0_0_50px_rgba(0,0,0,0.95)] relative">
+            {/* Runic Corners */}
+            <div className="absolute -top-1 -left-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
+            <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
+
+            <div className="space-y-2">
+              <div className="text-[10px] text-[#fbbf24] tracking-widest uppercase">
+                ✦ CRÓNICAS DE LUMINATI ✦
+              </div>
+              <h1 className="text-3xl sm:text-5xl font-black tracking-widest text-[#fbbf24] drop-shadow-[0_4px_16px_rgba(251,191,36,0.4)]">
                 SOULDOLLS
               </h1>
-              <p className="text-[#5FE3D2] text-[10px] md:text-xs tracking-widest uppercase">
-                2.5D RPG · Coleccionismo de Almas & Combate por Turnos
+              <p className="text-[#38bdf8] text-[9px] sm:text-[10px] tracking-widest uppercase">
+                2.5D Pixel-Art RPG · Coleccionismo de Almas & Combate Táctico
               </p>
             </div>
 
-            <p className="text-[#F2E6C9] text-xs md:text-sm max-w-md mx-auto leading-relaxed">
-              Explora las aldeas, habla con sus habitantes (E), bendice a tu equipo en las Fuentes Sagradas y descubre las almas salvajes en la hierba alta.
+            <p className="text-[#cbd5e1] text-xs leading-relaxed max-w-md mx-auto">
+              Explora aldeas místicas, habla con sus habitantes (E), purifica las almas en las Fuentes Sagradas y descubre espíritus salvajes en la hierba alta.
             </p>
 
-            <div className="pt-4 flex flex-col items-center justify-center gap-4">
+            <div className="pt-2 flex flex-col items-center justify-center gap-2">
               <button
                 onClick={handleStartClick}
-                className="px-6 py-3.5 bg-[#E8B84A] hover:bg-[#f6c860] border-2 border-[#8A6A3B] text-[#14101C] font-bold shadow-lg shadow-amber-500/25 flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer pointer-events-auto text-xs tracking-wider animate-bounce rounded-sm"
+                className="px-6 py-3 bg-[#24173d] hover:bg-[#342257] border-2 border-[#fbbf24] text-[#fef08a] font-bold shadow-[0_0_16px_rgba(251,191,36,0.35)] flex items-center gap-2.5 transition active:scale-95 cursor-pointer pointer-events-auto text-xs tracking-wider rounded-xs"
               >
-                ▶️
-                Pulsa cualquier tecla para empezar
+                <span>⚔️</span>
+                <span>PULSA PARA COMENZAR</span>
               </button>
             </div>
 
-            <div className="pt-6 border-t border-[#2A1F2D] text-[9px] text-[#8A6A3B] space-y-1">
-              <p>WASD: Mover · E: Hablar / Fuente / Cofre · J: Luminadex · I: Mochila · B: Combate</p>
+            <div className="pt-4 border-t border-[#2b1f40] text-[8px] text-[#94a3b8] flex flex-wrap justify-center gap-3">
+              <span>WASD: Mover</span>
+              <span>·</span>
+              <span>E: Hablar / Cofres</span>
+              <span>·</span>
+              <span>U: Escuadrón</span>
+              <span>·</span>
+              <span>I: Bolsa</span>
+              <span>·</span>
+              <span>J: Luminadex</span>
+              <span>·</span>
+              <span>B: Combate</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* TOP STATUS BAR */}
+      {/* TOP STATUS BAR (Zero-Pill Grounded RPG Header) */}
       {gameState === 'playing' && (
-        <div className="p-2 sm:p-3 md:p-5 flex items-start justify-between w-full z-20">
+        <div className="p-2 sm:p-3 md:p-4 flex items-start justify-between w-full z-20">
           
           {/* TOP-LEFT: Health, Gold, Soul Count */}
-          <div className="flex flex-col gap-1.5 sm:gap-2.5">
-            <div className="flex items-center gap-1.5 sm:gap-2.5">
+          <div className="flex flex-col gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {/* Soul Count */}
-              <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 sm:px-3 py-1 sm:py-1.5 shadow-lg flex items-center gap-1.5 sm:gap-2 text-[#5FE3D2]">
-                <span className="text-sm animate-spin" style={{ animationDuration: '6s' }}>✨</span>
+              <div className="pointer-events-auto bg-[#0e091c]/95 border border-[#2b1f40] rounded-xs px-2 sm:px-2.5 py-1 shadow-lg flex items-center gap-1.5 text-[#38bdf8]">
+                <span className="text-xs">🔮</span>
                 <div>
-                  <div className="text-[7px] sm:text-[8px] uppercase tracking-wider text-[#5FE3D2]/80">Almas</div>
-                  <div className="text-xs sm:text-sm font-bold tabular-nums text-[#F2E6C9]">
-                    {soulsCollected} <span className="text-[#5FE3D2]/60 text-[8px] sm:text-[9px]">/ {totalSouls}</span>
+                  <div className="text-[7px] uppercase tracking-wider text-[#94a3b8]">Almas</div>
+                  <div className="text-[10px] sm:text-xs font-bold tabular-nums text-[#fdf6e2]">
+                    {soulsCollected} <span className="text-[#64748b] text-[8px]">/ {totalSouls}</span>
                   </div>
                 </div>
               </div>
 
               {/* Gold Counter */}
-              <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 sm:px-3 py-1 sm:py-1.5 shadow-lg flex items-center gap-1.5 sm:gap-2 text-[#E8B84A]">
-                <span className="text-sm">💰</span>
+              <div className="pointer-events-auto bg-[#0e091c]/95 border border-[#2b1f40] rounded-xs px-2 sm:px-2.5 py-1 shadow-lg flex items-center gap-1.5 text-[#fbbf24]">
+                <span className="text-xs">💰</span>
                 <div>
-                  <div className="text-[7px] sm:text-[8px] uppercase tracking-wider text-[#E8B84A]/80">Oro</div>
-                  <div className="text-xs sm:text-sm font-bold tabular-nums text-[#F2E6C9]">{gold}</div>
+                  <div className="text-[7px] uppercase tracking-wider text-[#94a3b8]">Oro</div>
+                  <div className="text-[10px] sm:text-xs font-bold tabular-nums text-[#fdf6e2]">{gold}</div>
                 </div>
               </div>
             </div>
 
             {/* Health Bar */}
-            <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 sm:px-3 py-1 sm:py-1.5 shadow-lg flex items-center gap-1.5 sm:gap-2.5 w-36 sm:w-44">
-              <span className="text-sm text-[#ef4444]">❤️</span>
+            <div className="pointer-events-auto bg-[#0e091c]/95 border border-[#2b1f40] rounded-xs px-2 sm:px-2.5 py-1 shadow-lg flex items-center gap-2 w-36 sm:w-44">
+              <span className="text-xs text-[#ef4444]">❤️</span>
               <div className="flex-1">
-                <div className="flex justify-between text-[7px] sm:text-[8px] text-[#F2E6C9] mb-0.5 sm:mb-1">
+                <div className="flex justify-between text-[7px] sm:text-[8px] text-[#cbd5e1] mb-0.5">
                   <span>HP</span>
-                  <span>{hp}/{maxHp}</span>
+                  <span className="font-bold">{hp}/{maxHp}</span>
                 </div>
-                <div className="w-full bg-[#2A1F2D] h-1.5 sm:h-2 rounded-xs overflow-hidden border border-[#8A6A3B]/40">
+                <div className="w-full bg-[#07050d] h-1.5 rounded-xs overflow-hidden border border-[#2b1f40]">
                   <div
-                    className="bg-[#22c55e] h-full transition-all duration-300"
+                    className={`h-full transition-all duration-300 ${
+                      hp / maxHp > 0.5 ? 'bg-[#22c55e]' : hp / maxHp > 0.2 ? 'bg-[#eab308]' : 'bg-[#ef4444]'
+                    }`}
                     style={{ width: `${(hp / maxHp) * 100}%` }}
                   />
                 </div>
@@ -238,8 +257,8 @@ export const GameHUD: React.FC<GameHUDProps> = ({
           </div>
 
           {/* TOP-RIGHT: Circular Minimap, Day/Night toggle, Luminadex, Inventory, Audio */}
-          <div className="flex items-start gap-1.5 sm:gap-3">
-            <div className="flex flex-col items-end gap-1.5 sm:gap-2">
+          <div className="flex items-start gap-1.5 sm:gap-2.5">
+            <div className="flex flex-col items-end gap-1.5">
               {/* Circular Minimap */}
               <Minimap
                 playerPos={playerPosAndRot}
@@ -249,23 +268,41 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                 fountains={fountains}
               />
 
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 py-0.5 sm:px-2.5 sm:py-1 shadow-lg flex items-center gap-1 text-[#F2E6C9] text-[8px] sm:text-[9px]">
-                  {isDay ? <span>☀️</span> : <span>🌙</span>}
-                  <span>{isDay ? 'DÍA' : 'NOCHE'}</span>
+              <div className="flex items-center gap-1">
+                <div className="pointer-events-auto bg-[#0e091c]/95 border border-[#2b1f40] rounded-xs px-2 py-0.5 shadow-md flex items-center gap-1 text-[#fdf6e2] text-[7px] sm:text-[8px]">
+                  <span>{isDay ? '☀️' : '🌙'}</span>
+                  <span className="font-bold">{isDay ? 'DÍA' : 'NOCHE'}</span>
                 </div>
               </div>
             </div>
 
-            {/* ACTION BUTTONS */}
+            {/* ACTION BUTTONS (Clean RPG Navigation) */}
             <div className="flex flex-col gap-1.5 sm:gap-2 pointer-events-auto">
               {onTriggerCombatDemo && (
                 <button
                   onClick={onTriggerCombatDemo}
-                  className="bg-[#2A1F2D] hover:bg-[#3d2c41] border border-[#9B6BFF] px-1.5 sm:px-2.5 py-1 sm:py-1.5 rounded-xs text-[#9B6BFF] shadow-lg flex items-center justify-center gap-0.5 transition cursor-pointer text-[8px] sm:text-[9px] font-bold animate-pulse"
+                  className="bg-[#2A1F2D] hover:bg-[#3d2c41] border border-[#9B6BFF] px-2 py-1 sm:py-1.5 rounded-xs text-[#9B6BFF] shadow-lg flex items-center justify-center gap-1 transition cursor-pointer text-[8px] sm:text-[9px] font-bold"
                   title="Combate por Turnos [B]"
                 >
                   ⚔️ VS
+                </button>
+              )}
+              {onOpenSoulBag && (
+                <button
+                  onClick={() => onOpenSoulBag('team')}
+                  className="bg-[#14101C] hover:bg-[#2A1F2D] border border-[#b4862a] px-2 py-1 sm:py-1.5 rounded-xs text-[#fbbf24] shadow-lg flex items-center justify-center gap-1 transition cursor-pointer text-[8px] sm:text-[9px] font-bold"
+                  title="Equipo de Almas [U]"
+                >
+                  👥 ALMAS
+                </button>
+              )}
+              {onOpenSoulBag && (
+                <button
+                  onClick={() => onOpenSoulBag('bag')}
+                  className="bg-[#14101C] hover:bg-[#2A1F2D] border border-[#8A6A3B] px-2 py-1 sm:py-1.5 rounded-xs text-[#5FE3D2] shadow-lg flex items-center justify-center gap-1 transition cursor-pointer text-[8px] sm:text-[9px] font-bold"
+                  title="Mochila / Suministros [I]"
+                >
+                  🎒 BOLSA
                 </button>
               )}
               {onOpenLuminadex && (
@@ -277,13 +314,6 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                   📖
                 </button>
               )}
-              <button
-                onClick={() => setShowInventory(true)}
-                className="bg-[#14101C] hover:bg-[#2A1F2D] border border-[#8A6A3B] p-1.5 sm:p-2 rounded-xs text-[#F2E6C9] shadow-lg flex items-center justify-center transition cursor-pointer text-[8px] sm:text-[9px] font-bold text-[#5FE3D2]"
-                title="Mochila / Inventario [I]"
-              >
-                INV
-              </button>
               <button
                 onClick={handleAudioClick}
                 className="bg-[#14101C] hover:bg-[#2A1F2D] border border-[#8A6A3B] p-1.5 sm:p-2 rounded-xs text-[#F2E6C9] shadow-lg transition cursor-pointer"
@@ -333,7 +363,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       )}
 
       {/* MOBILE TOUCH CONTROLS (8-DIRECTIONAL VIRTUAL D-PAD & ACTION BUTTONS) */}
-      {gameState === 'playing' && !activeDialogue && !showInventory && (
+      {gameState === 'playing' && !activeDialogue && (
         <div className="fixed bottom-4 inset-x-3 pointer-events-none z-30 flex items-end justify-between select-none md:hidden pb-6 sm:pb-3">
           {/* 8-Directional Virtual D-Pad */}
           <div className="relative w-36 h-36 pointer-events-auto">
@@ -471,69 +501,74 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             </button>
           </div>
 
-          {/* Action Buttons: [⚡ CORRER], [E] Interact & [ATK] Axe */}
+          {/* Action Buttons: [⚡ CORRER], [E] Interact & [ATK] Attack (Tactical Gamepad) */}
           <div className="flex flex-col gap-2 pointer-events-auto items-end">
             {/* SPRINT BUTTON */}
             <button
               onPointerDown={(e) => { e.preventDefault(); onToggleSprint?.(); }}
-              className={`w-12 h-12 rounded-full border-2 flex flex-col items-center justify-center cursor-pointer touch-none transition-all shadow-md ${
+              className={`w-12 h-12 rounded-xs border-2 flex flex-col items-center justify-center cursor-pointer touch-none transition-all shadow-md ${
                 isSprinting
-                  ? 'bg-[#facc15]/30 border-[#facc15] text-[#facc15] shadow-[0_0_12px_rgba(250,204,21,0.6)] scale-105'
-                  : 'bg-[#14101C]/90 border-[#8A6A3B] text-[#F2E6C9]/80 active:bg-[#facc15]/20'
+                  ? 'bg-[#2b1f40] border-[#facc15] text-[#facc15] shadow-[0_0_12px_rgba(250,204,21,0.5)] scale-105'
+                  : 'bg-[#0e091c]/95 border-[#3b2a5a] text-[#cbd5e1]'
               }`}
             >
               <span className="text-xs">⚡</span>
-              <span className="text-[5px] tracking-tighter font-bold">CORRER</span>
+              <span className="text-[6px] tracking-tight font-bold">CORRER</span>
             </button>
 
             {/* [E] INTERACT BUTTON */}
             <button
               onPointerDown={(e) => { e.preventDefault(); onTriggerInteract?.(); }}
-              className="w-13 h-13 rounded-full bg-[#14101C]/95 active:bg-[#5FE3D2]/30 border-2 border-[#5FE3D2] active:scale-95 shadow-[0_0_12px_rgba(95,227,210,0.4)] flex flex-col items-center justify-center text-[#5FE3D2] cursor-pointer touch-none transition-transform"
+              className="w-13 h-13 rounded-xs bg-[#0e091c]/95 active:bg-[#164e63] border-2 border-[#38bdf8] active:scale-95 shadow-[0_0_12px_rgba(56,189,248,0.35)] flex flex-col items-center justify-center text-[#38bdf8] cursor-pointer touch-none transition-transform"
             >
-              <span className="text-[11px] font-bold">E</span>
-              <span className="text-[6px] tracking-tighter">HABLAR</span>
+              <span className="text-[12px] font-bold">E</span>
+              <span className="text-[6px] tracking-tight">HABLAR</span>
             </button>
 
             {/* [ATK] ATTACK BUTTON */}
             <button
               onPointerDown={(e) => { e.preventDefault(); onTriggerAttack?.(); }}
-              className="w-13 h-13 rounded-full bg-[#14101C]/95 active:bg-[#ef4444]/30 border-2 border-[#ef4444] active:scale-95 shadow-[0_0_12px_rgba(239,68,68,0.4)] flex flex-col items-center justify-center text-[#ef4444] cursor-pointer touch-none transition-transform"
+              className="w-13 h-13 rounded-xs bg-[#0e091c]/95 active:bg-[#4c0519] border-2 border-[#f87171] active:scale-95 shadow-[0_0_12px_rgba(248,113,113,0.35)] flex flex-col items-center justify-center text-[#f87171] cursor-pointer touch-none transition-transform"
             >
               <span className="text-sm">🪓</span>
-              <span className="text-[6px] tracking-tighter">ATACAR</span>
+              <span className="text-[6px] tracking-tight">ATACAR</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* QUEST TRACKER */}
+      {/* QUEST TRACKER (Grimoire Scroll Aesthetic) */}
       {gameState === 'playing' && questState !== 'none' && (
-        <div className="absolute top-32 sm:top-36 left-2 sm:left-3 md:left-5 pointer-events-none bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs p-2.5 sm:p-3 shadow-lg max-w-[220px] sm:max-w-xs text-[8px] sm:text-[9px] text-[#F2E6C9] z-10">
-          <div className="text-[#E8B84A] font-bold mb-1 flex items-center gap-1">
-            <span>MISIÓN:</span>
+        <div className="absolute top-28 sm:top-32 left-2 sm:left-3 md:left-4 pointer-events-none bg-[#0e091c]/95 border-2 border-[#b4862a] rounded-xs p-2.5 sm:p-3 shadow-2xl max-w-[220px] sm:max-w-xs text-[8px] sm:text-[9px] text-[#fdf6e2] z-10">
+          <div className="flex items-center justify-between border-b border-[#2b1f40] pb-1 mb-1.5">
+            <span className="text-[#fbbf24] font-bold tracking-wider uppercase flex items-center gap-1">
+              <span>📜</span>
+              <span>MISIÓN PRINCIPAL</span>
+            </span>
             {questState === 'completed' ? (
-              <span className="text-[#22c55e]">¡COMPLETADA!</span>
+              <span className="text-[#4ade80] text-[7px] font-bold">✓ PURIFICADA</span>
             ) : (
-              <span className="text-[#5FE3D2]">ALMA DE AGUA</span>
+              <span className="text-[#38bdf8] text-[7px] font-bold">EN CURSO</span>
             )}
           </div>
-          <div className="text-[#F2E6C9]/90 leading-normal text-[7px] sm:text-[8px]">
+          <div className="text-[#cbd5e1] leading-relaxed text-[7px] sm:text-[8px]">
             {questState === 'active'
-              ? '• Captura un alma de AGUA (Aquelle o Tomoe) y habla con el Anciano Kaelen.'
-              : '• ¡Completada! Las corrientes sagradas fluyen en armonía (+3 Cristales Superiores).'}
+              ? 'Captura un alma de AGUA (Aquelle o Tomoe) en las corrientes sagradas y habla con el Anciano Kaelen.'
+              : '¡Completada! Las aguas sagradas fluyen purificadas (+3 Cristales Superiores).'}
           </div>
         </div>
       )}
 
-      {/* FLOATING SOUL COLLECTION NOTIFICATION TOAST */}
+      {/* SOUL COLLECTION NOTIFICATION TOAST (Clean Trophy Card) */}
       {notification && (
-        <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto bg-[#14101C]/95 border-2 border-[#E8B84A] rounded-xs p-3 sm:p-4 shadow-2xl flex items-center gap-3 sm:gap-4 animate-bounce z-40 max-w-sm w-[90vw] mx-2">
-            <span className="text-xl">✨</span>
-          <div className="flex-1 text-left">
-            <div className="text-[8px] sm:text-[9px] text-[#5FE3D2]">¡Alma Rescatada!</div>
-            <div className="font-bold text-[#F2E6C9] text-xs">{notification.name}</div>
-            <div className="text-[8px] sm:text-[9px] text-[#8A6A3B] italic">"{notification.title}"</div>
+        <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto bg-[#110c1f]/95 border-2 border-[#fbbf24] rounded-xs p-3 sm:p-4 shadow-[0_0_30px_rgba(0,0,0,0.95)] flex items-center gap-3 animate-fade-in z-40 max-w-sm w-[90vw] mx-2">
+          <div className="w-10 h-10 bg-[#07050d] border border-[#fbbf24] rounded-xs flex items-center justify-center text-xl shrink-0">
+            🔮
+          </div>
+          <div className="flex-1 text-left min-w-0">
+            <div className="text-[7px] text-[#fbbf24] font-bold uppercase tracking-wider">¡Esencia de Alma Rescatada!</div>
+            <div className="font-bold text-[#fef3c7] text-xs truncate">{notification.name}</div>
+            <div className="text-[8px] text-[#94a3b8] italic truncate">"{notification.title}"</div>
           </div>
         </div>
       )}
@@ -541,51 +576,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       {/* CONTROLS HINT FADE OUT */}
       {gameState === 'playing' && showControlsHint && (
         <div className="absolute top-20 sm:top-24 left-1/2 transform -translate-x-1/2 pointer-events-none bg-[#14101C]/80 border border-[#8A6A3B] text-[#F2E6C9] text-[8px] sm:text-[9px] px-3 sm:px-4 py-1.5 sm:py-2 rounded-xs shadow-md transition-opacity duration-1000 z-10 text-center max-w-[90vw]">
-          WASD / D-Pad: Mover · SHIFT / ⚡: Correr · E: Hablar / Cofres · J: Luminadex · I: Mochila
-        </div>
-      )}
-
-      {/* INVENTORY MODAL */}
-      {showInventory && (
-        <div className="fixed inset-0 pointer-events-auto bg-[#14101C]/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="relative bg-[#14101C] border-3 border-[#E8B84A] rounded-xs max-w-md w-full max-h-[85dvh] flex flex-col shadow-2xl overflow-hidden animate-fade-in p-3.5 sm:p-4">
-            <div className="pixel-corner-tl" />
-            <div className="pixel-corner-tr" />
-            <div className="pixel-corner-bl" />
-            <div className="pixel-corner-br" />
-
-            <div className="border-b border-[#8A6A3B] pb-2.5 mb-2.5 flex items-center justify-between shrink-0">
-              <div className="text-[11px] sm:text-xs font-bold text-[#E8B84A] tracking-wider">
-                MOCHILA DEL HÉROE ({inventory.length} items)
-              </div>
-              <button
-                onClick={() => setShowInventory(false)}
-                className="text-[8px] sm:text-[9px] text-[#F2E6C9] px-2 py-1 bg-[#2A1F2D] border border-[#8A6A3B] rounded-xs cursor-pointer"
-              >
-                [X] CERRAR
-              </button>
-            </div>
-
-            <div className="overflow-y-auto space-y-2 flex-1 pr-1">
-              {inventory.length === 0 ? (
-                <div className="text-center py-8 text-[#8A6A3B] text-[8px] sm:text-[9px]">
-                  Mochila vacía. Abre cofres en las aldeas y el lago para conseguir objetos.
-                </div>
-              ) : (
-                inventory.map(item => (
-                  <div key={item.id} className="p-2 sm:p-2.5 bg-[#2A1F2D]/60 border border-[#8A6A3B]/60 rounded-xs flex items-center gap-2.5 sm:gap-3">
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-[#14101C] border border-[#8A6A3B] rounded-xs flex items-center justify-center text-xs">
-                      📦
-                    </div>
-                    <div className="flex-1 text-[8px] sm:text-[9px]">
-                      <div className="font-bold text-[#F2E6C9]">{item.name}</div>
-                      <div className="text-[#5FE3D2]">{item.description}</div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+          WASD / D-Pad: Mover · SHIFT / ⚡: Correr · E: Hablar / Cofres · U: Almas · I: Bolsa · J: Luminadex
         </div>
       )}
     </div>

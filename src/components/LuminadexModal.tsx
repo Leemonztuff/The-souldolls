@@ -1,6 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LUMINADEX_ENTRIES, TYPE_COLORS, LuminadexEntry } from '../data/mobs';
 import { audioManager } from '../audio/audioManager';
+import { SoulType } from '../types';
+
+const ELEMENTAL_SIGILS: Record<SoulType, string> = {
+  Fuego: '🔥',
+  Agua: '🌊',
+  Planta: '🌿',
+  Rayo: '⚡',
+  Sombra: '🔮',
+  Luz: '✨',
+};
 
 interface LuminadexModalProps {
   discovered: Record<string, 'seen' | 'captured'>;
@@ -105,22 +115,22 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
   }, [selectedEntry, isSeen, isCaptured]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#14101C]/85 backdrop-blur-sm select-none font-pixel">
-      <div className="relative w-full max-w-3xl bg-[#14101C] border-3 border-[#E8B84A] shadow-[0_0_30px_rgba(0,0,0,0.9),inset_0_0_0_2px_#2A1F2D] rounded-sm p-3.5 sm:p-5 md:p-6 text-[#F2E6C9] flex flex-col max-h-[95dvh] overflow-hidden">
-        {/* Four Purple Angled Corners */}
-        <div className="absolute -top-1.5 -left-1.5 w-3.5 h-3.5 bg-[#9B6BFF] border border-[#c084fc]" />
-        <div className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-[#9B6BFF] border border-[#c084fc]" />
-        <div className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 bg-[#9B6BFF] border border-[#c084fc]" />
-        <div className="absolute -bottom-1.5 -right-1.5 w-3.5 h-3.5 bg-[#9B6BFF] border border-[#c084fc]" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#07050d]/90 backdrop-blur-md select-none font-pixel">
+      <div className="relative w-full max-w-3xl bg-[#0e091c] border-2 border-[#b4862a] shadow-[0_0_50px_rgba(0,0,0,0.95)] rounded-xs p-3.5 sm:p-5 md:p-6 text-[#fdf6e2] flex flex-col max-h-[95dvh] overflow-hidden">
+        {/* Runic Corners */}
+        <div className="absolute -top-1 -left-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
+        <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
+        <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#c59b27] border border-[#fef08a]" />
 
         {/* HEADER BAR */}
-        <div className="flex items-center justify-between border-b-2 border-[#8A6A3B] pb-2 sm:pb-3 mb-2.5 sm:mb-4 shrink-0">
+        <div className="flex items-center justify-between border-b border-[#2b1f40] pb-2 sm:pb-3 mb-2.5 sm:mb-4 shrink-0">
           <div>
-            <div className="text-[11px] sm:text-xs md:text-sm font-bold text-[#E8B84A] tracking-wider flex items-center gap-2">
+            <div className="text-[11px] sm:text-xs md:text-sm font-bold text-[#fbbf24] tracking-wider flex items-center gap-2">
               <span>✦</span>
               <span>LUMINADEX · REGISTRO DE ALMAS</span>
             </div>
-            <div className="text-[8px] sm:text-[9px] text-[#5FE3D2] mt-0.5 sm:mt-1 tracking-tight">
+            <div className="text-[8px] sm:text-[9px] text-[#38bdf8] mt-0.5 sm:mt-1 tracking-tight">
               Vistas: {seenCount}/{totalEntries} · Capturadas: {capturedCount}/{totalEntries}
             </div>
           </div>
@@ -129,16 +139,16 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
               audioManager.playMenuBeep();
               onClose();
             }}
-            className="px-2.5 sm:px-3 py-1 bg-[#2A1F2D] hover:bg-[#3d2c41] border border-[#E8B84A] text-[8px] sm:text-[9px] text-[#F2E6C9] cursor-pointer transition rounded-xs"
+            className="px-2.5 sm:px-3 py-1 bg-[#1e1533] hover:bg-[#2b1f40] border border-[#b4862a] text-[8px] sm:text-[9px] text-[#fef3c7] cursor-pointer transition rounded-xs"
           >
-            [X] CERRAR
+            [ESC] CERRAR
           </button>
         </div>
 
         {/* CONTENT GRID */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 overflow-y-auto flex-1 pr-1">
           {/* LEFT LIST: Soul Index List (5 columns, scrollable on mobile) */}
-          <div className="md:col-span-5 flex flex-col gap-1.5 max-h-[140px] md:max-h-none overflow-y-auto pr-1">
+          <div className="md:col-span-5 flex flex-col gap-1.5 max-h-[160px] md:max-h-none overflow-y-auto pr-1">
             {LUMINADEX_ENTRIES.map((entry, idx) => {
               const entryStatus = discovered[entry.name.toUpperCase()] || 'none';
               const entrySeen = entryStatus === 'seen' || entryStatus === 'captured';
@@ -152,14 +162,14 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
                     audioManager.playMenuBeep();
                     setSelectedIdx(idx);
                   }}
-                  className={`p-2.5 border cursor-pointer transition-all flex items-center justify-between text-[10px] rounded-xs ${
+                  className={`p-2 border cursor-pointer transition-all flex items-center justify-between text-[9px] rounded-xs ${
                     isSelected
-                      ? 'bg-[#2A1F2D] border-[#E8B84A] shadow-[0_0_8px_rgba(232,184,74,0.4)] text-[#F2E6C9]'
-                      : 'bg-[#181224] border-[#8A6A3B]/50 hover:border-[#E8B84A]/70 text-[#F2E6C9]/70'
+                      ? 'border-[#b4862a] bg-[#24173d] text-[#fef3c7] shadow-[0_0_10px_rgba(180,134,42,0.4)]'
+                      : 'border-[#2b1f40] bg-[#140e26] hover:border-[#b4862a]/60 text-[#cbd5e1]'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-[#8A6A3B] text-[9px]">{entry.num}</span>
+                    <span className="text-[#94a3b8] text-[8px]">{entry.num}</span>
                     <span className="font-bold tracking-wide">
                       {entrySeen ? entry.name : '?????????'}
                     </span>
@@ -167,15 +177,15 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
 
                   <div className="flex items-center gap-1.5 text-[9px]">
                     {entryCaptured ? (
-                      <span className="text-[#E8B84A] font-bold" title="Capturada">
+                      <span className="text-[#fbbf24] font-bold" title="Capturada">
                         ★
                       </span>
                     ) : entrySeen ? (
-                      <span className="text-[#5FE3D2]" title="Vista">
+                      <span className="text-[#38bdf8]" title="Vista">
                         👁
                       </span>
                     ) : (
-                      <span className="text-[#8A6A3B]">?</span>
+                      <span className="text-[#64748b]">?</span>
                     )}
                   </div>
                 </div>
@@ -184,15 +194,15 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
           </div>
 
           {/* RIGHT PANEL: Selected Soul Details (7 columns) */}
-          <div className="md:col-span-7 bg-[#2A1F2D]/60 border border-[#8A6A3B] p-4 rounded-xs flex flex-col justify-between">
+          <div className="md:col-span-7 bg-[#140e26] border border-[#2b1f40] p-3.5 sm:p-4 rounded-xs flex flex-col justify-between">
             {/* Top row: Number, Name, Type */}
-            <div className="flex items-start justify-between border-b border-[#8A6A3B]/60 pb-3">
+            <div className="flex items-start justify-between border-b border-[#2b1f40] pb-2.5">
               <div>
-                <div className="text-[9px] text-[#8A6A3B]">{selectedEntry.num}</div>
-                <div className="text-sm font-bold text-[#E8B84A] tracking-wider mt-0.5">
+                <div className="text-[8px] text-[#94a3b8]">{selectedEntry.num}</div>
+                <div className="text-xs sm:text-sm font-bold text-[#fef3c7] tracking-wider mt-0.5">
                   {isSeen ? selectedEntry.name : 'DESCONOCIDA'}
                 </div>
-                <div className="text-[8px] text-[#5FE3D2] italic mt-0.5">
+                <div className="text-[8px] text-[#38bdf8] italic mt-0.5">
                   {isSeen ? `"${selectedEntry.title}"` : 'Sin registros de avistamiento'}
                 </div>
               </div>
@@ -200,16 +210,12 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
               {isSeen && (
                 <div className="flex flex-col items-end gap-1">
                   <span
-                    className="px-2.5 py-0.5 rounded-full text-[8px] uppercase font-bold tracking-wider"
-                    style={{
-                      backgroundColor: TYPE_COLORS[selectedEntry.type].bg,
-                      color: TYPE_COLORS[selectedEntry.type].text,
-                      border: `1px solid ${TYPE_COLORS[selectedEntry.type].border}`,
-                    }}
+                    className="text-[8px] font-bold uppercase tracking-wider"
+                    style={{ color: TYPE_COLORS[selectedEntry.type].text }}
                   >
-                    {selectedEntry.type}
+                    {ELEMENTAL_SIGILS[selectedEntry.type] || '✦'} {selectedEntry.type}
                   </span>
-                  <span className="text-[8px] text-[#E8B84A]">
+                  <span className="text-[7px] text-[#fbbf24] font-bold">
                     {isCaptured ? '★ REGISTRADA' : '👁 AVISTADA'}
                   </span>
                 </div>
@@ -232,13 +238,13 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
               </div>
 
               {/* Stats column */}
-              <div className="flex-1 w-full space-y-2 text-[9px]">
+              <div className="flex-1 w-full space-y-2 text-[8px] sm:text-[9px]">
                 <div>
-                  <div className="flex justify-between text-[#F2E6C9] mb-0.5">
+                  <div className="flex justify-between text-[#cbd5e1] mb-0.5">
                     <span>HP BASE</span>
-                    <span>{isCaptured ? selectedEntry.baseHp : '??'}</span>
+                    <span className="font-bold text-[#fef3c7]">{isCaptured ? selectedEntry.baseHp : '??'}</span>
                   </div>
-                  <div className="w-full bg-[#14101C] h-2 rounded-xs overflow-hidden border border-[#8A6A3B]/40">
+                  <div className="w-full bg-[#07050d] h-1.5 rounded-xs overflow-hidden border border-[#2b1f40]">
                     <div
                       className="bg-[#22c55e] h-full transition-all duration-300"
                       style={{ width: isCaptured ? `${(selectedEntry.baseHp / 50) * 100}%` : '0%' }}
@@ -247,11 +253,11 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-[#F2E6C9] mb-0.5">
+                  <div className="flex justify-between text-[#cbd5e1] mb-0.5">
                     <span>ATAQUE</span>
-                    <span>{isCaptured ? selectedEntry.baseAtk : '??'}</span>
+                    <span className="font-bold text-[#fef3c7]">{isCaptured ? selectedEntry.baseAtk : '??'}</span>
                   </div>
-                  <div className="w-full bg-[#14101C] h-2 rounded-xs overflow-hidden border border-[#8A6A3B]/40">
+                  <div className="w-full bg-[#07050d] h-1.5 rounded-xs overflow-hidden border border-[#2b1f40]">
                     <div
                       className="bg-[#ef4444] h-full transition-all duration-300"
                       style={{ width: isCaptured ? `${(selectedEntry.baseAtk / 30) * 100}%` : '0%' }}
@@ -260,11 +266,11 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-[#F2E6C9] mb-0.5">
+                  <div className="flex justify-between text-[#cbd5e1] mb-0.5">
                     <span>DEFENSA</span>
-                    <span>{isCaptured ? selectedEntry.baseDef : '??'}</span>
+                    <span className="font-bold text-[#fef3c7]">{isCaptured ? selectedEntry.baseDef : '??'}</span>
                   </div>
-                  <div className="w-full bg-[#14101C] h-2 rounded-xs overflow-hidden border border-[#8A6A3B]/40">
+                  <div className="w-full bg-[#07050d] h-1.5 rounded-xs overflow-hidden border border-[#2b1f40]">
                     <div
                       className="bg-[#3b82f6] h-full transition-all duration-300"
                       style={{ width: isCaptured ? `${(selectedEntry.baseDef / 30) * 100}%` : '0%' }}
@@ -273,11 +279,11 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
                 </div>
 
                 <div>
-                  <div className="flex justify-between text-[#F2E6C9] mb-0.5">
+                  <div className="flex justify-between text-[#cbd5e1] mb-0.5">
                     <span>VELOCIDAD</span>
-                    <span>{isCaptured ? selectedEntry.baseSpd : '??'}</span>
+                    <span className="font-bold text-[#fef3c7]">{isCaptured ? selectedEntry.baseSpd : '??'}</span>
                   </div>
-                  <div className="w-full bg-[#14101C] h-2 rounded-xs overflow-hidden border border-[#8A6A3B]/40">
+                  <div className="w-full bg-[#07050d] h-1.5 rounded-xs overflow-hidden border border-[#2b1f40]">
                     <div
                       className="bg-[#eab308] h-full transition-all duration-300"
                       style={{ width: isCaptured ? `${(selectedEntry.baseSpd / 30) * 100}%` : '0%' }}
@@ -288,9 +294,9 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
             </div>
 
             {/* Bottom: Lore description */}
-            <div className="border-t border-[#8A6A3B]/60 pt-3">
-              <div className="text-[8px] text-[#8A6A3B] uppercase mb-1">REGISTRO MÍSTICO:</div>
-              <p className="text-[9px] leading-relaxed text-[#F2E6C9]/90 min-h-[38px]">
+            <div className="border-t border-[#2b1f40] pt-2.5">
+              <div className="text-[7px] text-[#94a3b8] font-bold uppercase mb-1">REGISTRO MÍSTICO:</div>
+              <p className="text-[8px] sm:text-[9px] leading-relaxed text-[#cbd5e1] min-h-[36px]">
                 {isCaptured
                   ? selectedEntry.lore
                   : isSeen
@@ -302,9 +308,9 @@ export const LuminadexModal: React.FC<LuminadexModalProps> = ({ discovered, onCl
         </div>
 
         {/* FOOTER CONTROLS HINT */}
-        <div className="mt-3 pt-2 border-t border-[#8A6A3B]/40 flex items-center justify-between text-[8px] text-[#8A6A3B]">
-          <span>↑↓: NAVEGAR LISTA</span>
-          <span>J / ESC: CERRAR REGISTRO</span>
+        <div className="mt-3 pt-2 border-t border-[#2b1f40] flex items-center justify-between text-[7px] text-[#94a3b8]">
+          <span>[↑ / ↓]: NAVEGAR LISTA</span>
+          <span>[J / ESC]: CERRAR REGISTRO</span>
         </div>
       </div>
     </div>

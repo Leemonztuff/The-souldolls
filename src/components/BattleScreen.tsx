@@ -386,25 +386,34 @@ const PixelBox: React.FC<{ children: React.ReactNode; className?: string }> = ({
   </div>
 );
 
-// Type Pill Badge
+const ELEMENTAL_SIGILS: Record<SoulType, string> = {
+  Fuego: '🔥',
+  Agua: '🌊',
+  Planta: '🌿',
+  Rayo: '⚡',
+  Sombra: '🔮',
+  Luz: '✨',
+};
+
+// Runic Elemental Sigil (Anti-slop zero-pill discipline)
 const TypeBadge: React.FC<{ type: SoulType }> = ({ type }) => {
   const styling = TYPE_COLORS[type] || TYPE_COLORS.Agua;
   return (
-    <span
-      className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-pixel uppercase font-bold tracking-wider shadow-sm"
-      style={{
-        backgroundColor: styling.bg,
-        color: styling.text,
-        border: `1.5px solid ${styling.border}`,
-        boxShadow: `0 0 6px ${styling.glow}`,
-      }}
-    >
-      {type}
-    </span>
+    <div className="flex items-center gap-1 text-[8px] sm:text-[9px] font-pixel">
+      <span className="text-[10px] sm:text-[11px] leading-none">
+        {ELEMENTAL_SIGILS[type] || '✦'}
+      </span>
+      <span
+        className="font-bold tracking-wider uppercase drop-shadow-sm"
+        style={{ color: styling.text }}
+      >
+        {type}
+      </span>
+    </div>
   );
 };
 
-// Smooth Health Bar
+// Smooth High-Contrast Health Bar
 const HealthBar: React.FC<{ current: number; max: number }> = ({ current, max }) => {
   const pct = Math.max(0, Math.min(100, (current / max) * 100));
 
@@ -419,13 +428,13 @@ const HealthBar: React.FC<{ current: number; max: number }> = ({ current, max })
   }
 
   return (
-    <div className="w-full bg-[#0a0714] border-2 border-[#1e1730] h-2.5 sm:h-3.5 rounded-sm p-[1px] sm:p-[1.5px] overflow-hidden shadow-inner flex items-center">
+    <div className="w-full bg-[#07050d] border border-[#2b1f40] h-2 sm:h-2.5 rounded-xs p-[1px] overflow-hidden flex items-center">
       <div
-        className="h-full rounded-xs transition-all duration-600 ease-out"
+        className="h-full rounded-xs transition-all duration-500 ease-out"
         style={{
           width: `${pct}%`,
           backgroundColor: barColor,
-          boxShadow: `0 0 6px ${barGlow}`,
+          boxShadow: `0 0 4px ${barGlow}`,
         }}
       />
     </div>
@@ -512,6 +521,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
   // Capture sequence state
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureShakeStep, setCaptureShakeStep] = useState(0);
+  const [showShaderDrawer, setShowShaderDrawer] = useState(false);
 
   // Button navigation indexes
   const [selectedMainIdx, setSelectedMainIdx] = useState(0);
@@ -1239,16 +1249,33 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
         {/* 3D WEBGL SHADER ATTACK CANVAS OVERLAY */}
         <ShaderAttackCanvas className="z-30 pointer-events-none" />
 
-        {/* 1. TOP HEADER BAR: "Nv. N" and 3D Shader controls */}
-        <div className="relative z-20 px-2 sm:px-3 pt-2 pb-0.5 flex items-center justify-between text-[10px] sm:text-xs shrink-0">
-          <span className="text-[#fef3c7] font-bold tracking-wider drop-shadow-md">
-            Nv. {activeSoul.level}
-          </span>
+        {/* 1. TOP HEADER BAR: Turn/Soul Indicator & Discreet 3D FX Drawer Toggle */}
+        <div className="relative z-20 px-2 sm:px-3 pt-2 pb-0.5 flex items-center justify-between text-[9px] sm:text-[10px] shrink-0 font-pixel">
+          <div className="flex items-center gap-2">
+            <span className="text-[#fbbf24] font-bold tracking-wider">
+              ✦ ARENA DE COMBATE
+            </span>
+            <span className="text-[#475569]">·</span>
+            <span className="text-[#94a3b8]">Nv. {activeSoul.level}</span>
+          </div>
 
-          {/* Quick 3D Shader test bar */}
-          <div className="flex items-center gap-1 bg-[#140e25]/90 border border-[#a855f7]/50 px-1.5 py-0.5 rounded shadow pointer-events-auto">
-            <span className="text-[#a855f7] font-bold text-[8px] sm:text-[9px] uppercase tracking-wider hidden xs:inline">
-              3D SHADERS:
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={() => setShowShaderDrawer(prev => !prev)}
+              className="px-2 py-0.5 bg-[#140e25]/90 hover:bg-[#22173d] border border-[#a855f7]/60 text-[#d8b4fe] text-[8px] rounded-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
+              title="Alternar panel de pruebas de shaders WebGL 3D"
+            >
+              <span>🔮 3D FX</span>
+              <span className="text-[7px]">{showShaderDrawer ? '▲' : '▼'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible 3D Shader test drawer */}
+        {showShaderDrawer && (
+          <div className="relative z-30 mx-2 sm:mx-3 p-1.5 bg-[#120a21]/95 border border-[#a855f7]/60 rounded-xs flex flex-wrap items-center justify-center gap-1 shadow-2xl animate-fade-in shrink-0">
+            <span className="text-[#c084fc] font-bold text-[7px] uppercase tracking-wider pr-1">
+              PROBAR SHADERS:
             </span>
             <button
               onClick={() => {
@@ -1258,10 +1285,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                   vfxEngine.showFloatingText('💥 MAGMA BURST', 74, 30, '#f97316', 'text-xl');
                 });
               }}
-              className="px-1.5 py-0.5 bg-red-950/80 hover:bg-red-900 border border-red-500/60 rounded text-[8px] sm:text-[9px] text-[#fee2e2] transition active:scale-95 cursor-pointer"
-              title="Furia Volcánica (Lava)"
+              className="px-2 py-0.5 bg-red-950/80 hover:bg-red-900 border border-red-500/60 rounded-xs text-[7px] text-[#fee2e2] cursor-pointer"
             >
-              🌋 Lava
+              🌋 Furia Volcánica
             </button>
             <button
               onClick={() => {
@@ -1271,10 +1297,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                   vfxEngine.showFloatingText('🌊 ORBE MARINO', 74, 30, '#38bdf8', 'text-xl');
                 });
               }}
-              className="px-1.5 py-0.5 bg-sky-950/80 hover:bg-sky-900 border border-sky-500/60 rounded text-[8px] sm:text-[9px] text-[#e0f2fe] transition active:scale-95 cursor-pointer"
-              title="Orbe Marino (Agua)"
+              className="px-2 py-0.5 bg-sky-950/80 hover:bg-sky-900 border border-sky-500/60 rounded-xs text-[7px] text-[#e0f2fe] cursor-pointer"
             >
-              💧 Agua
+              💧 Orbe Marino
             </button>
             <button
               onClick={() => {
@@ -1284,10 +1309,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                   vfxEngine.showFloatingText('🧪 CIENO ÁCIDO', 74, 30, '#4ade80', 'text-xl');
                 });
               }}
-              className="px-1.5 py-0.5 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 rounded text-[8px] sm:text-[9px] text-[#dcfce7] transition active:scale-95 cursor-pointer"
-              title="Cieno Hirviente (Slime)"
+              className="px-2 py-0.5 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/60 rounded-xs text-[7px] text-[#dcfce7] cursor-pointer"
             >
-              🧪 Cieno
+              🧪 Cieno Ácido
             </button>
             <button
               onClick={() => {
@@ -1297,17 +1321,12 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                   vfxEngine.showFloatingText('🕳️ SINGULARIDAD', 74, 30, '#c084fc', 'text-xl');
                 });
               }}
-              className="px-1.5 py-0.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/60 rounded text-[8px] sm:text-[9px] text-[#f3e8ff] transition active:scale-95 cursor-pointer"
-              title="Singularidad Umbría (Agujero Negro)"
+              className="px-2 py-0.5 bg-purple-950/80 hover:bg-purple-900 border border-purple-500/60 rounded-xs text-[7px] text-[#f3e8ff] cursor-pointer"
             >
-              🕳️ Vacío
+              🕳️ Singularidad
             </button>
           </div>
-
-          <span className="text-[#a855f7] font-black tracking-widest drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]">
-            SOULDOLL
-          </span>
-        </div>
+        )}
 
         {/* 2. RIVAL PANEL (TOP-LEFT) */}
         <div className="relative z-20 px-2.5 sm:px-3.5 pt-0.5 sm:pt-1.5 flex justify-start shrink-0">
@@ -1446,14 +1465,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
             </p>
           </PixelBox>
 
-          {/* Action Row: LUCHAR, VIAJES, ALMAS, HUIR */}
+          {/* Action Row: LUCHAR, VIAJES, ALMAS, HUIR (Tactical Console Buttons) */}
           {mode === 'main' && (
             <div className="grid grid-cols-4 gap-1 sm:gap-1.5 pt-0.5 sm:pt-1">
               {[
-                { name: 'LUCHAR', color: '#ef4444', hoverBg: 'hover:bg-rose-950/60' },
-                { name: 'VIAJES', color: '#facc15', hoverBg: 'hover:bg-amber-950/60' },
-                { name: 'ALMAS', color: '#c084fc', hoverBg: 'hover:bg-purple-950/60' },
-                { name: 'HUIR', color: '#38bdf8', hoverBg: 'hover:bg-cyan-950/60' },
+                { key: '1', name: 'LUCHAR', icon: '⚔️', color: '#f87171' },
+                { key: '2', name: 'VIAJES', icon: '🎒', color: '#fde047' },
+                { key: '3', name: 'ALMAS', icon: '👥', color: '#d8b4fe' },
+                { key: '4', name: 'HUIR', icon: '💨', color: '#38bdf8' },
               ].map((btn, idx) => {
                 const isSelected = selectedMainIdx === idx;
                 return (
@@ -1462,25 +1481,25 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                     onClick={() => triggerMainAction(idx)}
                     onMouseEnter={() => setSelectedMainIdx(idx)}
                     disabled={isInputLocked}
-                    className={`relative py-2 sm:py-3 px-1 rounded-sm border-2 text-[9px] sm:text-[11px] font-bold tracking-wider cursor-pointer transition-all duration-150 flex items-center justify-center min-h-[38px] ${
+                    className={`relative py-2 sm:py-2.5 px-1 rounded-xs border-2 text-[8px] sm:text-[10px] font-bold tracking-wider cursor-pointer transition-all duration-150 flex flex-col items-center justify-center gap-0.5 min-h-[42px] ${
                       isSelected
-                        ? 'border-[#c59b27] bg-[#22183c] scale-[1.03] shadow-[0_0_12px_rgba(197,155,39,0.5)]'
-                        : 'border-[#4c1d95]/70 bg-[#160f29]'
-                    } ${btn.hoverBg} ${isInputLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        ? 'border-[#fbbf24] bg-[#24173d] scale-[1.03] shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+                        : 'border-[#2d2042] bg-[#140e26] hover:bg-[#1c1333]'
+                    } ${isInputLocked ? 'opacity-40 cursor-not-allowed' : ''}`}
                     style={{ color: btn.color }}
                   >
-                    <div className="absolute top-0 left-0 w-1 h-1 bg-[#8b5cf6]" />
-                    <div className="absolute top-0 right-0 w-1 h-1 bg-[#8b5cf6]" />
-                    <div className="absolute bottom-0 left-0 w-1 h-1 bg-[#8b5cf6]" />
-                    <div className="absolute bottom-0 right-0 w-1 h-1 bg-[#8b5cf6]" />
-                    {btn.name}
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] sm:text-xs">{btn.icon}</span>
+                      <span>{btn.name}</span>
+                    </div>
+                    <span className="text-[6px] text-[#64748b] font-mono">[{btn.key}]</span>
                   </button>
                 );
               })}
             </div>
           )}
 
-          {/* Moves Selection Panel */}
+          {/* Moves Selection Panel (Zero-Pill Runic Layout) */}
           {mode === 'moves' && (
             <div className="space-y-1.5 pt-1">
               <div className="grid grid-cols-2 gap-1.5">
@@ -1494,35 +1513,35 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                       onClick={() => executeMove(move)}
                       onMouseEnter={() => setSelectedMoveIdx(idx)}
                       disabled={!hasPP || isInputLocked}
-                      className={`relative p-2 rounded-sm border-2 text-left transition-all ${
+                      className={`relative p-2 rounded-xs border-2 text-left transition-all ${
                         !hasPP || isInputLocked
-                          ? 'opacity-40 border-slate-700 bg-slate-950/50 cursor-not-allowed'
+                          ? 'opacity-35 border-slate-800 bg-[#0c0817] cursor-not-allowed'
                           : isSelected
-                          ? 'border-[#c59b27] bg-[#22183c] shadow-[0_0_10px_rgba(197,155,39,0.5)] cursor-pointer'
-                          : 'border-[#4c1d95]/60 bg-[#160f29] cursor-pointer'
+                          ? 'border-[#fbbf24] bg-[#26193d] shadow-[0_0_10px_rgba(251,191,36,0.4)] cursor-pointer scale-[1.01]'
+                          : 'border-[#2b1f40] bg-[#140e26] hover:bg-[#1a1230] cursor-pointer'
                       }`}
                     >
                       <div className="flex items-center justify-between text-[9px] mb-1">
-                        <span className="font-bold text-[#fdf6e2] truncate max-w-[100px] flex items-center gap-1">
+                        <span className="font-bold text-[#fdf6e2] truncate max-w-[105px] flex items-center gap-1">
                           {move.name}
                           {move.shaderVfx && (
-                            <span className="text-[7px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shrink-0">
+                            <span className="text-[7px] px-1 py-0.2 rounded-xs bg-[#7e22ce]/30 text-[#d8b4fe] border border-[#a855f7]/50 font-bold shrink-0">
                               3D
                             </span>
                           )}
                         </span>
                         <span
-                          className="px-1 py-0.2 rounded text-[8px]"
-                          style={{ backgroundColor: moveColor.bg, color: moveColor.text }}
+                          className="font-bold text-[8px] uppercase tracking-wider"
+                          style={{ color: moveColor.text }}
                         >
-                          {move.type}
+                          {ELEMENTAL_SIGILS[move.type] || '✦'} {move.type}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-[8px] text-[#cbd5e1]">
+                      <div className="flex items-center justify-between text-[7px] sm:text-[8px] text-[#94a3b8]">
                         <span className={move.pp === 0 && move.id !== 'struggle' ? 'text-red-400 font-bold' : ''}>
                           PP: {move.pp}/{move.maxPp}
                         </span>
-                        {move.power > 0 ? <span>Pot: {move.power}</span> : <span>Buff</span>}
+                        <span>{move.power > 0 ? `Pot: ${move.power}` : 'Pot: Buff'}</span>
                       </div>
                     </button>
                   );
@@ -1532,9 +1551,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
               <button
                 onClick={() => setMode('main')}
                 disabled={isInputLocked}
-                className="w-full py-1.5 text-[9px] text-[#94a3b8] hover:text-white bg-[#1a1330] hover:bg-[#251b44] border border-[#3b2a5a] rounded-sm cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-1.5 text-[8px] sm:text-[9px] text-[#94a3b8] hover:text-white bg-[#160f29] hover:bg-[#201538] border border-[#2b1f40] rounded-xs cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                ← [VOLVER AL MENÚ]
+                ← [VOLVER AL MENÚ DE COMBATE]
               </button>
             </div>
           )}
@@ -1542,10 +1561,11 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
           {/* VIAJES / BAG PANEL */}
           {mode === 'bag' && (
             <div className="space-y-1.5 pt-1">
-              <div className="text-[9px] text-[#facc15] font-bold px-1">
-                BOLSA DE VIAJE:
+              <div className="text-[9px] text-[#facc15] font-bold px-1 flex items-center justify-between">
+                <span>🎒 BOLSA DE VIAJE:</span>
+                <span className="text-[7px] text-[#94a3b8]">{bag.reduce((acc, i) => acc + i.count, 0)} suministros</span>
               </div>
-              <div className="grid grid-cols-1 gap-1 max-h-[110px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 gap-1 max-h-[120px] overflow-y-auto pr-1">
                 {bag.map((item, idx) => {
                   const isSelected = selectedItemIdx === idx;
                   return (
@@ -1554,7 +1574,7 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                       onClick={() => handleUseItem(item)}
                       onMouseEnter={() => setSelectedItemIdx(idx)}
                       disabled={item.count <= 0 || isInputLocked}
-                      className={`p-2 rounded-sm border flex items-center justify-between text-left transition ${
+                      className={`p-2 rounded-xs border flex items-center justify-between text-left transition ${
                         item.count <= 0 || isInputLocked
                           ? 'opacity-40 border-slate-800 bg-slate-950/40 cursor-not-allowed'
                           : isSelected
@@ -1562,11 +1582,14 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                           : 'border-[#3b2a5a] bg-[#160f29] cursor-pointer'
                       }`}
                     >
-                      <div>
-                        <div className="text-[9px] font-bold text-[#fef3c7]">{item.name}</div>
-                        <div className="text-[7px] text-[#94a3b8]">{item.description}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{item.effect === 'heal' ? '🧪' : '💎'}</span>
+                        <div>
+                          <div className="text-[9px] font-bold text-[#fef3c7]">{item.name}</div>
+                          <div className="text-[7px] text-[#38bdf8]">{item.description}</div>
+                        </div>
                       </div>
-                      <div className="text-[10px] font-bold text-[#facc15] tabular-nums">
+                      <div className="text-[10px] font-bold text-[#facc15] tabular-nums pl-2">
                         x{item.count}
                       </div>
                     </button>
@@ -1576,26 +1599,27 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
               <button
                 onClick={() => setMode('main')}
                 disabled={isInputLocked}
-                className="w-full py-1.5 text-[9px] text-[#94a3b8] hover:text-white bg-[#1a1330] hover:bg-[#251b44] border border-[#3b2a5a] rounded-sm cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-1.5 text-[9px] text-[#94a3b8] hover:text-white bg-[#1a1330] hover:bg-[#251b44] border border-[#3b2a5a] rounded-xs cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ← [VOLVER AL MENÚ]
               </button>
             </div>
           )}
 
-          {/* ALMAS / TEAM PANEL */}
+          {/* ALMAS / TEAM PANEL (Zero-Pill Discipline & RPG Visuals) */}
           {mode === 'team' && (
             <div className="space-y-1.5 pt-1">
               <div className="text-[9px] text-[#c084fc] font-bold px-1 flex justify-between">
-                <span>EQUIPO DE ALMAS ({team.length}/6):</span>
-                {playerHp <= 0 && <span className="text-[#ef4444]">¡Elige alma de relevo!</span>}
+                <span>⚔️ ESCUADRÓN DE ALMAS ({team.length}/6):</span>
+                {playerHp <= 0 && <span className="text-[#ef4444] animate-pulse">¡Elige alma de relevo!</span>}
               </div>
-              <div className="grid grid-cols-1 gap-1 max-h-[120px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 gap-1 max-h-[130px] overflow-y-auto pr-1">
                 {team.map((soul, idx) => {
                   const isCurrent = idx === activeIdx;
                   const isFainted = soul.hp <= 0;
                   const isSelected = selectedTeamIdx === idx;
                   const tStyling = TYPE_COLORS[soul.type];
+                  const hpPct = Math.max(0, Math.min(100, (soul.hp / soul.maxHp) * 100));
 
                   return (
                     <button
@@ -1603,9 +1627,9 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                       onClick={() => handleSwitchToSoul(idx)}
                       onMouseEnter={() => setSelectedTeamIdx(idx)}
                       disabled={isFainted || isCurrent || isInputLocked}
-                      className={`p-1.5 rounded-sm border flex items-center justify-between text-left transition ${
+                      className={`p-1.5 rounded-xs border flex items-center justify-between text-left transition ${
                         isCurrent
-                          ? 'border-[#38bdf8] bg-[#0c233c] opacity-80 cursor-default'
+                          ? 'border-[#38bdf8] bg-[#0c233c] opacity-90 cursor-default'
                           : isFainted || isInputLocked
                           ? 'border-slate-800 bg-slate-950/60 opacity-40 cursor-not-allowed'
                           : isSelected
@@ -1613,24 +1637,33 @@ export const BattleScreen: React.FC<BattleScreenProps> = ({
                           : 'border-[#3b2a5a] bg-[#160f29] cursor-pointer'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="px-1.5 py-0.2 rounded-full text-[7px] font-bold"
-                          style={{ backgroundColor: tStyling.bg, color: tStyling.text }}
-                        >
-                          {soul.type}
-                        </span>
-                        <div>
-                          <div className="text-[9px] font-bold text-[#fef3c7]">
-                            {soul.name} <span className="text-[#facc15] text-[8px]">Nv. {soul.level}</span>
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 text-[8px] mb-0.5">
+                          <span style={{ color: tStyling.text }} className="font-bold">
+                            {soul.type}
+                          </span>
+                          <span className="text-[#64748b]">·</span>
+                          <span className="font-bold text-[#fef3c7] truncate">
+                            {soul.name}
+                          </span>
+                          <span className="text-[#fbbf24] font-bold">Nv. {soul.level}</span>
+                        </div>
+
+                        {/* Health gauge */}
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex-1 h-1 bg-[#090612] border border-[#2b1f40] rounded-xs overflow-hidden">
+                            <div
+                              className={`h-full ${hpPct > 50 ? 'bg-[#22c55e]' : hpPct > 20 ? 'bg-[#eab308]' : 'bg-[#ef4444]'}`}
+                              style={{ width: `${hpPct}%` }}
+                            />
                           </div>
-                          <div className="text-[7px] text-[#94a3b8]">
-                            HP: {soul.hp}/{soul.maxHp}
-                          </div>
+                          <span className="text-[7px] text-[#cbd5e1] font-mono shrink-0">
+                            {soul.hp}/{soul.maxHp}
+                          </span>
                         </div>
                       </div>
 
-                      <div>
+                      <div className="shrink-0">
                         {isCurrent && <span className="text-[7px] text-[#38bdf8] font-bold">[ACTIVA]</span>}
                         {isFainted && <span className="text-[7px] text-[#ef4444] font-bold">[CAÍDA]</span>}
                         {!isCurrent && !isFainted && <span className="text-[7px] text-[#4ade80] font-bold">[ENVIAR]</span>}

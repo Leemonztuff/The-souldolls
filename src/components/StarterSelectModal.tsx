@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
-import { BattleSoul, SoulType } from '../types';
+import { BattleSoul } from '../types';
 import { getStarterSouls, TYPE_COLORS } from '../data/mobs';
 import { audioManager } from '../audio/audioManager';
 
 interface StarterSelectModalProps {
   onSelect: (soul: BattleSoul) => void;
 }
+
+const ELEMENTAL_SIGILS: Record<string, string> = {
+  Fuego: '🔥',
+  Agua: '🌊',
+  Planta: '🌿',
+  Rayo: '⚡',
+  Sombra: '🔮',
+  Luz: '✨',
+};
 
 export const StarterSelectModal: React.FC<StarterSelectModalProps> = ({ onSelect }) => {
   const starters = getStarterSouls();
@@ -25,20 +34,24 @@ export const StarterSelectModal: React.FC<StarterSelectModalProps> = ({ onSelect
   };
 
   return (
-    <div className="fixed inset-0 pointer-events-auto bg-black/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 z-50 font-pixel text-[#fdf6e2] select-none">
-      <div className="pixel-frame w-full max-w-[440px] bg-[#0c0916] p-3.5 sm:p-5 space-y-3 sm:space-y-4 shadow-[0_0_40px_rgba(139,92,246,0.4)] animate-fade-in flex flex-col justify-between max-h-[95dvh] overflow-y-auto">
+    <div className="fixed inset-0 pointer-events-auto bg-[#07050d]/92 backdrop-blur-md flex items-center justify-center p-3 z-50 font-pixel text-[#fdf6e2] select-none">
+      <div className="relative w-full max-w-[440px] bg-[#0e091c] border-3 border-[#b4862a] p-4 sm:p-5 space-y-3.5 shadow-[0_0_60px_rgba(0,0,0,0.95)] rounded-xs flex flex-col justify-between max-h-[95dvh] overflow-y-auto">
         
+        {/* Runic Corners */}
+        <div className="absolute -top-1 -left-1 w-3.5 h-3.5 bg-[#c59b27] border border-[#fef08a]" />
+        <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#c59b27] border border-[#fef08a]" />
+        <div className="absolute -bottom-1 -left-1 w-3.5 h-3.5 bg-[#c59b27] border border-[#fef08a]" />
+        <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-[#c59b27] border border-[#fef08a]" />
+
         {/* Title */}
-        <div className="text-center space-y-1">
-          <h2 className="text-xs md:text-sm text-[#fef3c7] tracking-wider font-bold">
-            ELIGE TU ALMA INICIAL
+        <div className="text-center space-y-1 border-b border-[#2b1f40] pb-2.5">
+          <div className="text-[8px] text-[#fbbf24] tracking-widest uppercase">✦ INVOCACIÓN INICIAL ✦</div>
+          <h2 className="text-xs sm:text-sm text-[#fef3c7] tracking-wider font-bold uppercase">
+            Elige tu SoulDoll Primordial
           </h2>
-          <p className="text-[8px] text-[#94a3b8]">
-            Cada alma posee un vínculo elemental único.
-          </p>
         </div>
 
-        {/* 3 Starter Tabs */}
+        {/* 3 Starter Tabs (Zero-Pill Runic Design) */}
         <div className="grid grid-cols-3 gap-2">
           {starters.map((starter, idx) => {
             const isSel = selectedIndex === idx;
@@ -47,18 +60,18 @@ export const StarterSelectModal: React.FC<StarterSelectModalProps> = ({ onSelect
               <button
                 key={starter.name}
                 onClick={() => handleSelect(idx)}
-                className={`p-2 rounded-sm border-2 text-center transition-all cursor-pointer ${
+                className={`p-2 rounded-xs border transition-all cursor-pointer text-center ${
                   isSel
-                    ? 'border-[#c59b27] bg-[#22183c] scale-105 shadow-[0_0_12px_rgba(197,155,39,0.5)]'
-                    : 'border-[#3b2a5a] bg-[#160f29] hover:bg-[#1f153a]'
+                    ? 'border-[#b4862a] bg-[#24173d] scale-[1.03] shadow-[0_0_12px_rgba(180,134,42,0.5)]'
+                    : 'border-[#2b1f40] bg-[#140e26] hover:bg-[#1a1230]'
                 }`}
               >
                 <div className="text-[9px] font-bold text-[#fef3c7] truncate">{starter.name}</div>
                 <div
-                  className="mt-1 inline-block px-1.5 py-0.5 rounded-full text-[7px] font-bold"
-                  style={{ backgroundColor: sTypeColor.bg, color: sTypeColor.text }}
+                  className="mt-1 text-[8px] font-bold uppercase"
+                  style={{ color: sTypeColor.text }}
                 >
-                  {starter.type}
+                  {ELEMENTAL_SIGILS[starter.type] || '✦'} {starter.type}
                 </div>
               </button>
             );
@@ -66,13 +79,12 @@ export const StarterSelectModal: React.FC<StarterSelectModalProps> = ({ onSelect
         </div>
 
         {/* Preview & Stats Card */}
-        <div className="bg-[#130f22] border border-[#2e204a] p-3 rounded-sm flex items-center gap-4">
+        <div className="bg-[#140e26] border border-[#2b1f40] p-3 rounded-xs flex items-center gap-4">
           
           {/* Sprite Preview with Magic Circle */}
-          <div className="relative w-28 h-36 flex flex-col items-center justify-center">
-            {/* Base Magic Circle */}
+          <div className="relative w-28 h-32 flex flex-col items-center justify-center bg-[#0a0614] border border-[#2b1f40] rounded-xs shadow-inner">
             <div
-              className="absolute bottom-2 w-20 h-8 rounded-full border border-dashed animate-pulse-glow"
+              className="absolute bottom-3 w-16 h-6 rounded-full border border-dashed animate-pulse-glow"
               style={{
                 borderColor: typeStyling.border,
                 backgroundColor: `${typeStyling.border}22`,
@@ -80,9 +92,8 @@ export const StarterSelectModal: React.FC<StarterSelectModalProps> = ({ onSelect
                 transform: 'rotateX(60deg)',
               }}
             />
-            {/* Sprite */}
             <div
-              className="relative w-20 h-28 bg-no-repeat bg-center animate-battle-bob"
+              className="relative w-20 h-24 bg-no-repeat bg-center"
               style={{
                 backgroundImage: `url(${current.spritesheet})`,
                 backgroundPosition: `-${current.frameFront.x}px -${current.frameFront.y}px`,
@@ -94,25 +105,25 @@ export const StarterSelectModal: React.FC<StarterSelectModalProps> = ({ onSelect
 
           {/* Details */}
           <div className="flex-1 space-y-1.5 text-[8px] text-[#cbd5e1]">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#fef3c7]">{current.name}</span>
-              <span className="text-[#facc15]">Nv. {current.level}</span>
+            <div className="flex items-center justify-between border-b border-[#2b1f40] pb-1">
+              <span className="text-[10px] font-bold text-[#fbbf24]">{current.name}</span>
+              <span className="text-[#fbbf24] font-bold">Nv. {current.level}</span>
             </div>
 
             <div className="space-y-0.5">
-              <div className="flex justify-between"><span>HP:</span><span className="text-white font-bold">{current.maxHp}</span></div>
+              <div className="flex justify-between"><span>HP Base:</span><span className="text-white font-bold">{current.maxHp}</span></div>
               <div className="flex justify-between"><span>Ataque:</span><span className="text-white font-bold">{current.attack}</span></div>
               <div className="flex justify-between"><span>Defensa:</span><span className="text-white font-bold">{current.defense}</span></div>
               <div className="flex justify-between"><span>Velocidad:</span><span className="text-white font-bold">{current.speed}</span></div>
             </div>
 
-            <div className="pt-1 border-t border-[#2a1e42]">
-              <span className="text-[7px] text-[#94a3b8] block mb-0.5">Movimientos:</span>
+            <div className="pt-1 border-t border-[#2b1f40]">
+              <span className="text-[7px] text-[#94a3b8] block mb-0.5">Habilidades Iniciales:</span>
               <div className="space-y-0.5">
                 {current.moves.map(m => (
-                  <div key={m.id} className="flex justify-between text-[7px] text-[#fde68a]">
+                  <div key={m.id} className="flex justify-between text-[7px] text-[#fef3c7]">
                     <span>• {m.name}</span>
-                    <span className="text-[#94a3b8]">PP {m.maxPp}</span>
+                    <span className="text-[#38bdf8]">PP {m.maxPp}</span>
                   </div>
                 ))}
               </div>
@@ -123,9 +134,9 @@ export const StarterSelectModal: React.FC<StarterSelectModalProps> = ({ onSelect
         {/* Confirm Button */}
         <button
           onClick={handleConfirm}
-          className="w-full py-3 bg-gradient-to-r from-[#d97706] to-[#b45309] hover:from-[#f59e0b] hover:to-[#d97706] text-black font-bold text-[10px] tracking-wider rounded-sm shadow-lg shadow-amber-500/20 border border-[#fef3c7]/60 cursor-pointer transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full py-2.5 bg-[#24173d] hover:bg-[#342257] border-2 border-[#fbbf24] text-[#fef08a] font-bold text-[9px] tracking-wider rounded-xs shadow-[0_0_16px_rgba(251,191,36,0.35)] cursor-pointer transition-all active:scale-95"
         >
-          CONFIRMAR ELECCIÓN
+          ✦ CONFIRMAR E INICIAR AVENTURA ✦
         </button>
 
       </div>

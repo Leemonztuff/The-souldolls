@@ -10,6 +10,7 @@ import { BattleScreen } from './components/BattleScreen';
 import { StarterSelectModal } from './components/StarterSelectModal';
 import { SlotSelectionModal } from './components/SlotSelectionModal';
 import { LuminadexModal } from './components/LuminadexModal';
+import { SoulBagModal } from './components/SoulBagModal';
 import { GameState, SoulDoll, InventoryItem, BattleSoul, BagItem, ItemId, GameSaveData, GrassPatch } from './types';
 import { getDefaultPlayerSoul, getDefaultBag, createRandomWildSoul } from './data/mobs';
 import { SaveManager } from './save/saveManager';
@@ -55,11 +56,16 @@ export default function App() {
 
   // Luminadex / Registro de Almas (Key J)
   const [showLuminadex, setShowLuminadex] = useState(false);
+  // Codex de Almas & Bolsa (Key U / Key I)
+  const [showSoulBag, setShowSoulBag] = useState(false);
+  const [soulBagInitialTab, setSoulBagInitialTab] = useState<'team' | 'bag' | 'box'>('team');
+
   const [isSprinting, setIsSprinting] = useState(false);
   const [discoveredSouls, setDiscoveredSouls] = useState<Record<string, 'seen' | 'captured'>>({});
   
   const [activeSlot, setActiveSlot] = useState<number>(0);
   const [showSlotSelection, setShowSlotSelection] = useState(true);
+  const [fadeOverlayActive, setFadeOverlayActive] = useState<boolean>(false);
 
   // Initial load from SaveManager
   useEffect(() => {
@@ -256,18 +262,24 @@ export default function App() {
         setAllSouls([...engine.getSoulDolls()]);
       },
       (rival: BattleSoul, intro: string) => {
-        // Register soul as seen in Luminadex
-        setDiscoveredSouls(prev => {
-          const upper = rival.name.toUpperCase();
-          if (prev[upper] === 'captured') return prev;
-          const next = { ...prev, [upper]: 'seen' as const };
-          saveGameState(teamRef.current, boxRef.current, bagRef.current, goldRef.current, questStateRef.current, next, discoveredGrassRef.current);
-          return next;
-        });
+        setFadeOverlayActive(true);
+        setTimeout(() => {
+          // Register soul as seen in Luminadex
+          setDiscoveredSouls(prev => {
+            const upper = rival.name.toUpperCase();
+            if (prev[upper] === 'captured') return prev;
+            const next = { ...prev, [upper]: 'seen' as const };
+            saveGameState(teamRef.current, boxRef.current, bagRef.current, goldRef.current, questStateRef.current, next, discoveredGrassRef.current);
+            return next;
+          });
 
-        setRivalSoul(rival);
-        setBattleIntroText(intro);
-        setGameState('combat');
+          setRivalSoul(rival);
+          setBattleIntroText(intro);
+          setGameState('combat');
+          setTimeout(() => {
+            setFadeOverlayActive(false);
+          }, 400);
+        }, 500);
       },
       (chestItems: { id: ItemId; name: string; count: number }[], chestGold: number) => {
         // Add items to bag
@@ -393,61 +405,79 @@ export default function App() {
     captured?: boolean,
     capturedSoul?: BattleSoul
   ) => {
-    const newGold = gold + goldGained;
-    setGold(newGold);
+    setFadeOverlayActive(true);
+    setTimeout(() => {
+      const newGold = gold + goldGained;
+      setGold(newGold);
 
-    let updatedTeam = [...team];
-    let updatedBox = [...box];
-    let updatedDiscovered = { ...discoveredSouls };
+      let updatedTeam = [...team];
+      let updatedBox = [...box];
+      let updatedDiscovered = { ...discoveredSouls };
 
-    if (captured && capturedSoul) {
-      if (updatedTeam.length < 6) {
-        updatedTeam.push(capturedSoul);
-      } else {
-        updatedBox.push(capturedSoul);
+      if (captured && capturedSoul) {
+        if (updatedTeam.length < 6) {
+          updatedTeam.push(capturedSoul);
+        } else {
+          updatedBox.push(capturedSoul);
+        }
+        updatedDiscovered[capturedSoul.name.toUpperCase()] = 'captured';
+        setDiscoveredSouls(updatedDiscovered);
       }
-      updatedDiscovered[capturedSoul.name.toUpperCase()] = 'captured';
-      setDiscoveredSouls(updatedDiscovered);
-    }
 
-    setTeam(updatedTeam);
-    setBox(updatedBox);
+      setTeam(updatedTeam);
+      setBox(updatedBox);
 
-    if (engineRef.current) {
-      engineRef.current.onCombatVictory(goldGained);
-    }
+      if (engineRef.current) {
+        engineRef.current.onCombatVictory(goldGained);
+      }
 
-    saveGameState(updatedTeam, updatedBox, bag, newGold, questState, updatedDiscovered, discoveredGrass);
-    setGameState('playing');
-    setRivalSoul(null);
+      saveGameState(updatedTeam, updatedBox, bag, newGold, questState, updatedDiscovered, discoveredGrass);
+      setGameState('playing');
+      setRivalSoul(null);
+      setTimeout(() => {
+        setFadeOverlayActive(false);
+      }, 400);
+    }, 500);
   };
 
   // Combat defeat: restore team HP and respawn in village
   const handleBattleDefeat = () => {
-    const restoredTeam = team.map(soul => ({
-      ...soul,
-      hp: soul.maxHp,
-    }));
-    setTeam(restoredTeam);
-    setActiveSoulIndex(0);
+    setFadeOverlayActive(true);
+    setTimeout(() => {
+      const restoredTeam = team.map(soul => ({
+        ...soul,
+        hp: soul.maxHp,
+      }));
+      setTeam(restoredTeam);
+      setActiveSoulIndex(0);
 
-    if (engineRef.current) {
-      engineRef.current.respawnAtVillage();
-    }
+      if (engineRef.current) {
+        engineRef.current.respawnAtVillage();
+      }
 
-    saveGameState(restoredTeam, box, bag, gold, questState, discoveredSouls, discoveredGrass);
-    setGameState('playing');
-    setRivalSoul(null);
+      saveGameState(restoredTeam, box, bag, gold, questState, discoveredSouls, discoveredGrass);
+      setGameState('playing');
+      setRivalSoul(null);
+      setTimeout(() => {
+        setFadeOverlayActive(false);
+      }, 400);
+    }, 500);
   };
 
   // Flee combat
   const handleBattleFlee = () => {
-    if (engineRef.current) {
-      engineRef.current.onCombatFlee();
-    }
-    saveGameState(team, box, bag, gold, questState, discoveredSouls, discoveredGrass);
-    setGameState('playing');
-    setRivalSoul(null);
+    setFadeOverlayActive(true);
+    setTimeout(() => {
+      if (engineRef.current) {
+        engineRef.current.onCombatFlee();
+      }
+      saveGameState(team, box, bag, gold, questState, discoveredSouls, discoveredGrass);
+      setGameState('playing');
+      setRivalSoul(null);
+      setTimeout(() => {
+        setFadeOverlayActive(false);
+      }, 400);
+    }, 500);
   };
 
   // Quick debug/demo button or B key trigger
@@ -534,6 +564,10 @@ export default function App() {
           discoveredGrass={discoveredGrass}
           fountains={fountains}
           onOpenLuminadex={() => setShowLuminadex(true)}
+          onOpenSoulBag={(tab = 'team') => {
+            setSoulBagInitialTab(tab);
+            setShowSoulBag(true);
+          }}
           onTriggerCombatDemo={handleTriggerCombatDemo}
           onVirtualKey={(code, isDown) => engineRef.current?.setVirtualKey(code, isDown)}
           onTriggerInteract={() => engineRef.current?.triggerInteract()}
@@ -555,6 +589,30 @@ export default function App() {
         />
       )}
 
+      {/* Codex de Almas & Bolsa / Equipo Modal (Tecla U para Equipo, Tecla I para Bolsa) */}
+      {showSoulBag && (
+        <SoulBagModal
+          initialTab={soulBagInitialTab}
+          team={team}
+          box={box}
+          bag={bag}
+          gold={gold}
+          onClose={() => setShowSoulBag(false)}
+          onUpdateTeam={newTeam => {
+            setTeam(newTeam);
+            saveGameState(newTeam, box, bag, gold, questState, discoveredSouls, discoveredGrass);
+          }}
+          onUpdateBox={newBox => {
+            setBox(newBox);
+            saveGameState(team, newBox, bag, gold, questState, discoveredSouls, discoveredGrass);
+          }}
+          onUpdateBag={newBag => {
+            setBag(newBag);
+            saveGameState(team, box, newBag, gold, questState, discoveredSouls, discoveredGrass);
+          }}
+        />
+      )}
+
       {/* Turn-based 9:16 Combat Screen */}
       {gameState === 'combat' && rivalSoul && (
         <BattleScreen
@@ -570,6 +628,17 @@ export default function App() {
           initialMessage={battleIntroText}
         />
       )}
+
+      {/* Smooth Fade Transition Overlay between World (playing) and Combat */}
+      <div 
+        className={`fixed inset-0 z-[200] pointer-events-none bg-[#0e091c] transition-opacity duration-600 ease-in-out flex items-center justify-center ${
+          fadeOverlayActive ? 'opacity-100 pointer-events-auto' : 'opacity-0'
+        }`}
+      >
+        <div className="text-[#b4862a] font-pixel text-xl animate-pulse tracking-widest">
+          ✦ TRANSCENDIENDO ✦
+        </div>
+      </div>
     </div>
   );
 }
