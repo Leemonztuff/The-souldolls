@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { GameState, SoulDoll, InventoryItem, GrassPatch } from '../types';
 import { Minimap } from './Minimap';
 import { FountainData } from '../world/worldGen';
-import { Volume2, VolumeX, Sparkles, BookOpen, Play, Sun, Moon, Coins, Heart } from 'lucide-react';
+// lucide-react replaced with emojis for debugging
 import { audioManager } from '../audio/audioManager';
 
 interface GameHUDProps {
@@ -158,7 +158,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
         >
           <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
             <div className="flex justify-center mb-2">
-              <Sparkles className="w-14 h-14 text-[#5FE3D2] animate-pulse" />
+              <span className="text-5xl animate-pulse">✨</span>
             </div>
             
             <div className="space-y-3">
@@ -179,7 +179,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                 onClick={handleStartClick}
                 className="px-6 py-3.5 bg-[#E8B84A] hover:bg-[#f6c860] border-2 border-[#8A6A3B] text-[#14101C] font-bold shadow-lg shadow-amber-500/25 flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 cursor-pointer pointer-events-auto text-xs tracking-wider animate-bounce rounded-sm"
               >
-                <Play className="w-4 h-4 fill-[#14101C]" />
+                ▶️
                 Pulsa cualquier tecla para empezar
               </button>
             </div>
@@ -200,7 +200,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
             <div className="flex items-center gap-1.5 sm:gap-2.5">
               {/* Soul Count */}
               <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 sm:px-3 py-1 sm:py-1.5 shadow-lg flex items-center gap-1.5 sm:gap-2 text-[#5FE3D2]">
-                <Sparkles className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#5FE3D2] animate-spin" style={{ animationDuration: '6s' }} />
+                <span className="text-sm animate-spin" style={{ animationDuration: '6s' }}>✨</span>
                 <div>
                   <div className="text-[7px] sm:text-[8px] uppercase tracking-wider text-[#5FE3D2]/80">Almas</div>
                   <div className="text-xs sm:text-sm font-bold tabular-nums text-[#F2E6C9]">
@@ -211,7 +211,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 
               {/* Gold Counter */}
               <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 sm:px-3 py-1 sm:py-1.5 shadow-lg flex items-center gap-1.5 sm:gap-2 text-[#E8B84A]">
-                <Coins className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#E8B84A]" />
+                <span className="text-sm">💰</span>
                 <div>
                   <div className="text-[7px] sm:text-[8px] uppercase tracking-wider text-[#E8B84A]/80">Oro</div>
                   <div className="text-xs sm:text-sm font-bold tabular-nums text-[#F2E6C9]">{gold}</div>
@@ -221,7 +221,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 
             {/* Health Bar */}
             <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 sm:px-3 py-1 sm:py-1.5 shadow-lg flex items-center gap-1.5 sm:gap-2.5 w-36 sm:w-44">
-              <Heart className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#ef4444] fill-[#ef4444]" />
+              <span className="text-sm text-[#ef4444]">❤️</span>
               <div className="flex-1">
                 <div className="flex justify-between text-[7px] sm:text-[8px] text-[#F2E6C9] mb-0.5 sm:mb-1">
                   <span>HP</span>
@@ -251,7 +251,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
 
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <div className="pointer-events-auto bg-[#14101C]/90 border border-[#8A6A3B] rounded-xs px-2 py-0.5 sm:px-2.5 sm:py-1 shadow-lg flex items-center gap-1 text-[#F2E6C9] text-[8px] sm:text-[9px]">
-                  {isDay ? <Sun className="w-3 h-3 text-[#E8B84A]" /> : <Moon className="w-3 h-3 text-[#5FE3D2]" />}
+                  {isDay ? <span>☀️</span> : <span>🌙</span>}
                   <span>{isDay ? 'DÍA' : 'NOCHE'}</span>
                 </div>
               </div>
@@ -274,7 +274,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                   className="bg-[#14101C] hover:bg-[#2A1F2D] border border-[#E8B84A] p-1.5 sm:p-2 rounded-xs text-[#E8B84A] shadow-lg flex items-center justify-center transition cursor-pointer"
                   title="Luminadex [J]"
                 >
-                  <BookOpen className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#E8B84A]" />
+                  📖
                 </button>
               )}
               <button
@@ -289,7 +289,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
                 className="bg-[#14101C] hover:bg-[#2A1F2D] border border-[#8A6A3B] p-1.5 sm:p-2 rounded-xs text-[#F2E6C9] shadow-lg transition cursor-pointer"
                 title="Audio [M]"
               >
-                {audioEnabled ? <Volume2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#5FE3D2]" /> : <VolumeX className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#ef4444]" />}
+                {audioEnabled ? <span>🔊</span> : <span>🔇</span>}
               </button>
               {onRespawn && (
                 <button
@@ -529,9 +529,7 @@ export const GameHUD: React.FC<GameHUDProps> = ({
       {/* FLOATING SOUL COLLECTION NOTIFICATION TOAST */}
       {notification && (
         <div className="absolute top-16 sm:top-20 left-1/2 transform -translate-x-1/2 pointer-events-auto bg-[#14101C]/95 border-2 border-[#E8B84A] rounded-xs p-3 sm:p-4 shadow-2xl flex items-center gap-3 sm:gap-4 animate-bounce z-40 max-w-sm w-[90vw] mx-2">
-          <div className="p-2 sm:p-3 bg-[#5FE3D2]/20 rounded-xs border border-[#5FE3D2]/40">
-            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-[#5FE3D2]" />
-          </div>
+            <span className="text-xl">✨</span>
           <div className="flex-1 text-left">
             <div className="text-[8px] sm:text-[9px] text-[#5FE3D2]">¡Alma Rescatada!</div>
             <div className="font-bold text-[#F2E6C9] text-xs">{notification.name}</div>

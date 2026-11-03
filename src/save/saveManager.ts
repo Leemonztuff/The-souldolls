@@ -60,20 +60,27 @@ export class SaveManager {
   public static importSave(slot: number, json: string) {
     try {
       const data = JSON.parse(json);
-      if (typeof data.version !== 'number' || !Array.isArray(data.team)) {
-        throw new Error('Invalid imported save data schema');
+      // Basic schema validation
+      if (typeof data.version !== 'number' || (!Array.isArray(data.team) && !data.team)) {
+        throw new Error('Formato de guardado inválido: Falta equipo o versión.');
       }
       this.saveToSlot(slot, data);
     } catch (e) {
       logger.error('Failed to import save', e);
-      throw e; // Rethrow to allow UI to catch and alert
+      throw e; 
     }
   }
 
   private static migrate(data: any): GameSaveData {
-    if (data.version === CURRENT_VERSION) return data;
-    // Migration logic for future versions would go here
-    return data;
+    let currentData = data;
+    
+    // Future-proofing: sequential migrations
+    if (currentData.version < 1) {
+      // Logic for migration to v1
+      currentData.version = 1;
+    }
+    
+    return currentData as GameSaveData;
   }
 
   public static deleteSlot(slot: number) {

@@ -91,6 +91,97 @@ canvas:not(.battle-sprite-canvas) {
   animation: pulseGlow 2.5s ease-in-out infinite;
 }
 
+/* ===================================================
+   UNIFIED ELEMENTAL HIT KEYFRAME ANIMATIONS
+   =================================================== */
+
+/* 1. Fuego: Violent Incendiary Shudder & Thermal Bloom */
+@keyframes hitFuego {
+  0% { transform: scale(1) translate(0, 0); filter: none; }
+  15% { transform: scale(1.1) translate(-10px, -4px) rotate(-3deg); filter: brightness(2.8) drop-shadow(0 0 26px #ef4444) saturate(2.5); }
+  35% { transform: scale(0.95) translate(12px, 3px) rotate(4deg); filter: brightness(2.2) drop-shadow(0 0 20px #f97316); }
+  55% { transform: scale(1.06) translate(-8px, -2px) rotate(-2deg); filter: brightness(2.6) drop-shadow(0 0 24px #ef4444); }
+  75% { transform: scale(0.98) translate(6px, 2px) rotate(1deg); filter: brightness(1.8) drop-shadow(0 0 14px #ea580c); }
+  100% { transform: scale(1) translate(0, 0); filter: none; }
+}
+.animate-hit-fuego {
+  animation: hitFuego 0.55s ease-in-out;
+}
+
+/* 2. Agua: Hydrodynamic Surge, Viscous Wobble & Aqua Shimmer */
+@keyframes hitAgua {
+  0% { transform: scale(1) skewX(0deg); filter: none; }
+  20% { transform: scaleX(1.22) scaleY(0.82) skewX(-10deg) translateY(6px); filter: brightness(2.4) drop-shadow(0 0 24px #38bdf8) hue-rotate(-15deg); }
+  45% { transform: scaleX(0.85) scaleY(1.18) skewX(8deg) translateY(-8px); filter: brightness(2.0) drop-shadow(0 0 18px #0284c7); }
+  70% { transform: scaleX(1.1) scaleY(0.92) skewX(-4deg) translateY(3px); filter: brightness(1.8) drop-shadow(0 0 14px #38bdf8); }
+  100% { transform: scale(1) skewX(0deg) translateY(0); filter: none; }
+}
+.animate-hit-agua {
+  animation: hitAgua 0.6s ease-in-out;
+}
+
+/* 3. Planta: Acidic Compression Squish & Toxic Bloom */
+@keyframes hitPlanta {
+  0% { transform: scale(1); filter: none; }
+  20% { transform: scale(1.25, 0.75) translateY(10px); filter: brightness(2.6) drop-shadow(0 0 28px #4ade80) saturate(2.8); }
+  45% { transform: scale(0.82, 1.25) translateY(-10px); filter: brightness(2.0) drop-shadow(0 0 20px #16a34a); }
+  70% { transform: scale(1.12, 0.9) translateY(4px); filter: brightness(2.2) drop-shadow(0 0 16px #4ade80); }
+  100% { transform: scale(1) translateY(0); filter: none; }
+}
+.animate-hit-planta {
+  animation: hitPlanta 0.6s ease-in-out;
+}
+
+/* 4. Rayo: Strobe Jitter & High-Voltage Spastic Glitch */
+@keyframes hitRayo {
+  0% { transform: translate(0, 0); filter: none; opacity: 1; }
+  10% { transform: translate(-14px, 6px); filter: brightness(3.5) drop-shadow(0 0 35px #facc15) invert(0.2); opacity: 0.7; }
+  25% { transform: translate(14px, -8px); filter: brightness(1.2) drop-shadow(0 0 10px #ca8a04); opacity: 1; }
+  40% { transform: translate(-10px, -4px); filter: brightness(3.8) drop-shadow(0 0 40px #fef08a) invert(0.3); opacity: 0.6; }
+  60% { transform: translate(8px, 6px); filter: brightness(2.5) drop-shadow(0 0 20px #facc15); opacity: 0.9; }
+  80% { transform: translate(-4px, 2px); filter: brightness(1.8) drop-shadow(0 0 12px #eab308); opacity: 1; }
+  100% { transform: translate(0, 0); filter: none; opacity: 1; }
+}
+.animate-hit-rayo {
+  animation: hitRayo 0.45s steps(8, end);
+}
+
+/* 5. Sombra: Gravitational Collapse Implosion & Void Inversion */
+@keyframes hitSombra {
+  0% { transform: scale(1) rotate(0deg); filter: none; }
+  25% { transform: scale(0.68) rotate(-12deg); filter: brightness(0.25) drop-shadow(0 0 30px #a855f7) invert(0.85); }
+  50% { transform: scale(1.15) rotate(6deg); filter: brightness(2.4) drop-shadow(0 0 26px #7c3aed); }
+  75% { transform: scale(0.9) rotate(-3deg); filter: brightness(0.7) drop-shadow(0 0 18px #c084fc); }
+  100% { transform: scale(1) rotate(0deg); filter: none; }
+}
+.animate-hit-sombra {
+  animation: hitSombra 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* 6. Luz: Divine Expansion Flare & Holy Radiation */
+@keyframes hitLuz {
+  0% { transform: scale(1); filter: none; }
+  20% { transform: scale(1.28); filter: brightness(4.0) drop-shadow(0 0 40px #fbbf24) drop-shadow(0 0 60px #ffffff); }
+  45% { transform: scale(0.92); filter: brightness(2.2) drop-shadow(0 0 24px #f59e0b); }
+  70% { transform: scale(1.1); filter: brightness(2.8) drop-shadow(0 0 28px #fbbf24); }
+  100% { transform: scale(1); filter: none; }
+}
+.animate-hit-luz {
+  animation: hitLuz 0.55s ease-out;
+}
+
+/* Floating Elemental Impact Badge */
+@keyframes impactBadgeFloat {
+  0% { transform: translateY(0) scale(0.6); opacity: 0; }
+  20% { transform: translateY(-16px) scale(1.2); opacity: 1; }
+  40% { transform: translateY(-24px) scale(1.0); opacity: 1; }
+  80% { transform: translateY(-38px) scale(0.95); opacity: 0.9; }
+  100% { transform: translateY(-48px) scale(0.8); opacity: 0; }
+}
+.animate-impact-badge {
+  animation: impactBadgeFloat 1.2s ease-out forwards;
+}
+
 /* Pixel art corners and frame */
 .pixel-frame {
   position: relative;

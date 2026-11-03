@@ -34,12 +34,15 @@ import {
   createWoodPlankTexture,
 } from './textures';
 
+import { createBillboardMaterial } from './instancing';
+import seedrandom from 'seedrandom';
+
 export interface TreeData {
   x: number;
   z: number;
   radius: number;
-  mesh: THREE.Sprite;
   scale: number;
+  variant: number;
 }
 
 export interface FountainData {
@@ -63,7 +66,6 @@ export interface SparkleData {
 }
 
 export interface GrassTuftData {
-  mesh: THREE.Sprite;
   x: number;
   z: number;
   baseY: number;
@@ -93,11 +95,7 @@ export function getTerrainHeight(x: number, z: number): number {
   return rawH;
 }
 
-import seedrandom from 'seedrandom';
-
-// ... (other imports)
-
-export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera): {
+export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera, seed: string = 'default'): {
   soulDolls: SoulDoll[];
   spirits: Spirit[];
   trees: TreeData[];
@@ -113,6 +111,7 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   updateWorld: (delta: number, playerX: number, playerZ: number) => void;
   setTimeOfDay: (t: number) => void;
 } {
+  const rng = seedrandom(seed);
   const nightColor = new THREE.Color(0x0e1b38);
   const dayColor = new THREE.Color(0x7dd3fc);
 
@@ -153,18 +152,18 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
     transparent: true,
   });
   const moonSprite = new THREE.Sprite(moonMat);
-  moonSprite.scale.set(27.04, 27.04, 1); // 20.8 * 1.3
-  moonSprite.position.set(-120, 117, -140); // Y: 90 * 1.3
+  moonSprite.scale.set(27.04, 27.04, 1);
+  moonSprite.position.set(-120, 117, -140);
   scene.add(moonSprite);
 
-  const starsGeo = new THREE.BufferGeometry();
   const starCount = 300;
   const starPos = new Float32Array(starCount * 3);
   for (let i = 0; i < starCount * 3; i += 3) {
-    starPos[i] = (Math.random() - 0.5) * 350;
-    starPos[i + 1] = 60 + Math.random() * 60;
-    starPos[i + 2] = (Math.random() - 0.5) * 350;
+    starPos[i] = (rng() - 0.5) * 350;
+    starPos[i + 1] = 60 + rng() * 60;
+    starPos[i + 2] = (rng() - 0.5) * 350;
   }
+  const starsGeo = new THREE.BufferGeometry();
   starsGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
   const starsMat = new THREE.PointsMaterial({
     color: 0xffffff,
@@ -183,15 +182,16 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   });
 
   const mountainCount = 18;
+  const mountainGeo = new THREE.ConeGeometry(1, 1, 4); // Prototype
   for (let i = 0; i < mountainCount; i++) {
     const angle = (i / mountainCount) * Math.PI * 2;
-    const dist = 320 + Math.random() * 40;
+    const dist = 320 + rng() * 40;
     const mx = Math.cos(angle) * dist;
     const mz = Math.sin(angle) * dist;
 
-    const mGeo = new THREE.ConeGeometry(40 + Math.random() * 20, 35 + Math.random() * 25, 4);
-    const mMesh = new THREE.Mesh(mGeo, mountainMat);
-    mMesh.position.set(mx, getTerrainHeight(mx, mz) + 10, mz);
+    const mMesh = new THREE.Mesh(mountainGeo, mountainMat);
+    mMesh.scale.set(40 + rng() * 20, 35 + rng() * 25, 40 + rng() * 20);
+    mMesh.position.set(mx, getTerrainHeight(mx, mz) + (35 + rng() * 25) * 0.5 - 10, mz);
     mountainGroup.add(mMesh);
   }
   scene.add(mountainGroup);
@@ -225,13 +225,12 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   const grassPatches: GrassPatch[] = [];
   const grassTufts: GrassTuftData[] = [];
   const grassTex = getTexture('grass', createGrassTexture);
-  const grassMat = new THREE.SpriteMaterial({
-    map: grassTex,
-    transparent: true,
-    alphaTest: 0.5,
-  });
+  
+  // Instanced Grass
+  const billboardGeo = new THREE.PlaneGeometry(1, 1);
+  const grassInstancedMat = createBillboardMaterial(grassTex);
+  grassInstancedMat.uniforms.swayAmount.value = 0.15;
 
-  const grassGroup = new THREE.Group();
   const v1x = -70, v1z = -70;
   const v2x = 90, v2z = 10;
   const v3x = 10, v3z = 80;
@@ -240,9 +239,9 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   let grassAttempts = 0;
   while (patchCount < 32 && grassAttempts < 400) {
     grassAttempts++;
-    const gx = (Math.random() - 0.5) * 340;
-    const gz = (Math.random() - 0.5) * 340;
-    const gRadius = 3 + Math.random() * 4.5;
+    const gx = (rng() - 0.5) * 340;
+    const gz = (rng() - 0.5) * 340;
+    const gRadius = 3 + rng() * 4.5;
 
     if (Math.hypot(gx, gz) < 30) continue;
     if (isOnPath(gx, gz)) continue;
@@ -256,27 +255,42 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
 
     const tuftCount = Math.floor(gRadius * 5);
     for (let t = 0; t < tuftCount; t++) {
-      const angle = Math.random() * Math.PI * 2;
-      const r = Math.random() * gRadius;
+      const angle = rng() * Math.PI * 2;
+      const r = rng() * gRadius;
       const tx = gx + Math.cos(angle) * r;
       const tz = gz + Math.sin(angle) * r;
       const ty = getTerrainHeight(tx, tz);
 
-      const sprite = new THREE.Sprite(grassMat);
-      sprite.scale.set(LUMINATI_SCALE.TALL_GRASS_SIZE, LUMINATI_SCALE.TALL_GRASS_SIZE, 1);
-      sprite.position.set(tx, ty + (LUMINATI_SCALE.TALL_GRASS_SIZE * 0.5), tz);
-      grassGroup.add(sprite);
-
       grassTufts.push({
-        mesh: sprite,
         x: tx,
         z: tz,
         baseY: ty + (LUMINATI_SCALE.TALL_GRASS_SIZE * 0.5),
-        phase: Math.random() * Math.PI * 2,
+        phase: rng() * Math.PI * 2,
       });
     }
   }
-  scene.add(grassGroup);
+
+  const grassIMesh = new THREE.InstancedMesh(billboardGeo, grassInstancedMat, grassTufts.length);
+  const dummy = new THREE.Object3D();
+  grassTufts.forEach((gt, i) => {
+    dummy.position.set(gt.x, gt.baseY, gt.z);
+    dummy.scale.set(LUMINATI_SCALE.TALL_GRASS_SIZE, LUMINATI_SCALE.TALL_GRASS_SIZE, 1);
+    // Use the 4th row of matrix for metadata (x, phase, z)
+    dummy.updateMatrix();
+    const m = dummy.matrix.clone();
+    m.elements[12] = gt.x;
+    m.elements[13] = gt.phase; // Hijack Y translation for phase in shader
+    m.elements[14] = gt.z;
+    // Actually we need Y for position. Let's use a custom attribute or just hijack something else.
+    // Let's use W of position columns? No, let's just stick to standard for now and pass phase via scale.z or similar.
+    // Or just use the original gt.baseY.
+    m.elements[13] = gt.baseY; 
+    // We'll pass phase in m.elements[15] (which is usually 1.0)
+    m.elements[15] = gt.phase;
+    
+    grassIMesh.setMatrixAt(i, m);
+  });
+  scene.add(grassIMesh);
 
   const isInsideGrass = (x: number, z: number): boolean => {
     for (let i = 0; i < grassPatches.length; i++) {
@@ -400,33 +414,9 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   scene.add(npcGroup);
 
   const chests: Chest[] = [
-    {
-      id: 'chest-quest',
-      x: 110,
-      z: -75,
-      opened: false,
-      rewardType: 'gold',
-      rewardAmount: 150,
-      rewardName: '150x Oro Ancestral',
-    },
-    {
-      id: 'chest-2',
-      x: -80,
-      z: -60,
-      opened: false,
-      rewardType: 'item',
-      rewardAmount: 1,
-      rewardName: 'Poción de Vida Mágica',
-    },
-    {
-      id: 'chest-3',
-      x: 95,
-      z: 5,
-      opened: false,
-      rewardType: 'gold',
-      rewardAmount: 100,
-      rewardName: '100x Oro de la Torre',
-    }
+    { id: 'chest-quest', x: 110, z: -75, opened: false, rewardType: 'gold', rewardAmount: 150, rewardName: '150x Oro Ancestral' },
+    { id: 'chest-2', x: -80, z: -60, opened: false, rewardType: 'item', rewardAmount: 1, rewardName: 'Poción de Vida Mágica' },
+    { id: 'chest-3', x: 95, z: 5, opened: false, rewardType: 'gold', rewardAmount: 100, rewardName: '100x Oro de la Torre' }
   ];
 
   const chestGroup = new THREE.Group();
@@ -453,17 +443,8 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
     const ex = Math.cos(angle) * 45;
     const ez = Math.sin(angle) * 45;
     enemies.push({
-      id: `enemy-${i}`,
-      x: ex,
-      z: ez,
-      startX: ex,
-      startZ: ez,
-      hp: 3,
-      maxHp: 3,
-      radius: 2.0,
-      patrolDist: 15,
-      speed: 2.5,
-      alive: true,
+      id: `enemy-${i}`, x: ex, z: ez, startX: ex, startZ: ez,
+      hp: 3, maxHp: 3, radius: 2.0, patrolDist: 15, speed: 2.5, alive: true,
     });
 
     const mat = new THREE.SpriteMaterial({ map: enemyTex, transparent: true });
@@ -476,11 +457,7 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
 
   const villageGroup = new THREE.Group();
   const roadTex = getTexture('road_cobble', createCobblestoneRoadTexture);
-  const roadMat = new THREE.MeshStandardMaterial({
-    map: roadTex,
-    roughness: 0.85,
-    metalness: 0.08,
-  });
+  const roadMat = new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.85, metalness: 0.08 });
 
   const plazaGeo = new THREE.CircleGeometry(12.0, 32);
   plazaGeo.rotateX(-Math.PI / 2);
@@ -527,22 +504,13 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   const sideWallMat = new THREE.MeshStandardMaterial({ map: sideWallTex, roughness: 0.75 });
   const heroRoofMat = new THREE.MeshStandardMaterial({ map: heroRoofTex, roughness: 0.7 });
 
-  const heroHouseMaterials = [sideWallMat, sideWallMat, sideWallMat, sideWallMat, sideWallMat, heroWallMat];
-  const houseGeo = new THREE.BoxGeometry(
-    LUMINATI_SCALE.HOUSE_WIDTH,
-    LUMINATI_SCALE.HOUSE_HEIGHT,
-    LUMINATI_SCALE.HOUSE_DEPTH
-  );
-  const heroHouse = new THREE.Mesh(houseGeo, heroHouseMaterials);
+  const houseGeo = new THREE.BoxGeometry(LUMINATI_SCALE.HOUSE_WIDTH, LUMINATI_SCALE.HOUSE_HEIGHT, LUMINATI_SCALE.HOUSE_DEPTH);
+  const heroHouse = new THREE.Mesh(houseGeo, [sideWallMat, sideWallMat, sideWallMat, sideWallMat, sideWallMat, heroWallMat]);
   heroHouse.position.set(-20, 6.0, 18);
   villageGroup.add(heroHouse);
   collisionBoxes.push({ x: -20, z: 18, rx: 9.8, rz: 7.8 });
 
-  const roofGeo = new THREE.BoxGeometry(
-    LUMINATI_SCALE.HOUSE_WIDTH + 1.6,
-    LUMINATI_SCALE.ROOF_HEIGHT,
-    LUMINATI_SCALE.HOUSE_DEPTH + 1.6
-  );
+  const roofGeo = new THREE.BoxGeometry(LUMINATI_SCALE.HOUSE_WIDTH + 1.6, LUMINATI_SCALE.ROOF_HEIGHT, LUMINATI_SCALE.HOUSE_DEPTH + 1.6);
   const heroRoof = new THREE.Mesh(roofGeo, heroRoofMat);
   heroRoof.position.set(-20, 12.6, 18);
   villageGroup.add(heroRoof);
@@ -552,8 +520,7 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   const rivalWallMat = new THREE.MeshStandardMaterial({ map: rivalWallTex, roughness: 0.75 });
   const rivalRoofMat = new THREE.MeshStandardMaterial({ map: rivalRoofTex, roughness: 0.7 });
 
-  const rivalHouseMaterials = [sideWallMat, sideWallMat, sideWallMat, sideWallMat, sideWallMat, rivalWallMat];
-  const rivalHouse = new THREE.Mesh(houseGeo, rivalHouseMaterials);
+  const rivalHouse = new THREE.Mesh(houseGeo, [sideWallMat, sideWallMat, sideWallMat, sideWallMat, sideWallMat, rivalWallMat]);
   rivalHouse.position.set(20, 6.0, 18);
   villageGroup.add(rivalHouse);
   collisionBoxes.push({ x: 20, z: 18, rx: 9.8, rz: 7.8 });
@@ -567,37 +534,22 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   const labWallMat = new THREE.MeshStandardMaterial({ map: labWallTex, roughness: 0.75 });
   const labRoofMat = new THREE.MeshStandardMaterial({ map: labRoofTex, roughness: 0.7 });
 
-  const labMaterials = [sideWallMat, sideWallMat, sideWallMat, sideWallMat, labWallMat, sideWallMat];
-  const labGeo = new THREE.BoxGeometry(
-    LUMINATI_SCALE.LAB_WIDTH,
-    LUMINATI_SCALE.LAB_HEIGHT,
-    LUMINATI_SCALE.LAB_DEPTH
-  );
-  const labBuilding = new THREE.Mesh(labGeo, labMaterials);
+  const labGeo = new THREE.BoxGeometry(LUMINATI_SCALE.LAB_WIDTH, LUMINATI_SCALE.LAB_HEIGHT, LUMINATI_SCALE.LAB_DEPTH);
+  const labBuilding = new THREE.Mesh(labGeo, [sideWallMat, sideWallMat, sideWallMat, sideWallMat, labWallMat, sideWallMat]);
   labBuilding.position.set(22, 7.5, -16);
   villageGroup.add(labBuilding);
   collisionBoxes.push({ x: 22, z: -16, rx: 13.8, rz: 9.8 });
 
-  const labRoofGeo = new THREE.BoxGeometry(
-    LUMINATI_SCALE.LAB_WIDTH + 1.8,
-    LUMINATI_SCALE.LAB_ROOF_HEIGHT,
-    LUMINATI_SCALE.LAB_DEPTH + 1.8
-  );
+  const labRoofGeo = new THREE.BoxGeometry(LUMINATI_SCALE.LAB_WIDTH + 1.8, LUMINATI_SCALE.LAB_ROOF_HEIGHT, LUMINATI_SCALE.LAB_DEPTH + 1.8);
   const labRoof = new THREE.Mesh(labRoofGeo, labRoofMat);
   labRoof.position.set(22, 16.0, -16);
   villageGroup.add(labRoof);
 
   const fenceTex = getTexture('fence', createFenceTexture);
-  const hedgeTex = getTexture('hedge', createHedgeTexture);
-  const flowerbedTex = getTexture('flowerbed', createFlowerbedTexture);
   const lampTex = getTexture('street_lamp', createStreetLampTexture);
-
   const fenceMat = new THREE.SpriteMaterial({ map: fenceTex, transparent: true });
-  const hedgeMat = new THREE.SpriteMaterial({ map: hedgeTex, transparent: true });
-  const flowerbedMat = new THREE.MeshStandardMaterial({ map: flowerbedTex, transparent: true, roughness: 0.9 });
   const lampMat = new THREE.SpriteMaterial({ map: lampTex, transparent: true });
 
-  // Picket fences along front gardens
   [-28, -24, -20, -16, -12].forEach(fx => {
     const s = new THREE.Sprite(fenceMat);
     s.scale.set(LUMINATI_SCALE.FENCE_SIZE, LUMINATI_SCALE.FENCE_SIZE, 1);
@@ -611,13 +563,7 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
     villageGroup.add(s);
   });
 
-  // Street lamps around central plaza
-  const lampPositions = [
-    { x: -6.0, z: 3.5 },
-    { x: 6.0, z: 3.5 },
-    { x: -6.0, z: -4.5 },
-    { x: 6.0, z: -4.5 },
-  ];
+  const lampPositions = [{ x: -6.0, z: 3.5 }, { x: 6.0, z: 3.5 }, { x: -6.0, z: -4.5 }, { x: 6.0, z: -4.5 }];
   lampPositions.forEach(lp => {
     const s = new THREE.Sprite(lampMat);
     s.scale.set(LUMINATI_SCALE.STREET_LAMP_WIDTH, LUMINATI_SCALE.STREET_LAMP_HEIGHT, 1);
@@ -625,59 +571,13 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
     villageGroup.add(s);
   });
 
-  const fbGeo = new THREE.PlaneGeometry(14, 3);
-  fbGeo.rotateX(-Math.PI / 2);
-  const fb1 = new THREE.Mesh(fbGeo, flowerbedMat);
-  fb1.position.set(-20, 1.025, 9.5);
-  villageGroup.add(fb1);
-
-  const fb2 = new THREE.Mesh(fbGeo, flowerbedMat);
-  fb2.position.set(20, 1.025, 9.5);
-  villageGroup.add(fb2);
-
   const signposts: Signpost[] = [
-    {
-      id: 'sign-town',
-      x: 3.8,
-      z: 1.5,
-      name: 'Villa Marioneta',
-      text: 'VILLA MARIONETA: "Pueblo natal de los Marionetistas. Donde los lazos de alma cobran vida."',
-    },
-    {
-      id: 'sign-hero',
-      x: -11.5,
-      z: 9.5,
-      name: 'Casa del Héroe',
-      text: 'Casa de Robin: "Un hogar acogedor. La aventura de un coleccionista de almas comienza aquí."',
-    },
-    {
-      id: 'sign-rival',
-      x: 11.5,
-      z: 9.5,
-      name: 'Casa de Selene',
-      text: 'Casa de Selene: "¡Partí al amanecer hacia el bosque! ¡Atrápame si puedes, vecino!"',
-    },
-    {
-      id: 'sign-lab',
-      x: 7.5,
-      z: -8.0,
-      name: 'Laboratorio de Almas',
-      text: 'LABORATORIO DE ALMAS: "Anciano Kaelen, Maestro de Marionetas. Investigación y consagración de almas místicas."',
-    },
-    {
-      id: 'sign-route1',
-      x: 5.5,
-      z: 26.0,
-      name: 'Ruta 1 Norte',
-      text: 'RUTA 1 NORTE: "Senda del Bosque Sombra hacia el Gran Lago. ¡Peligro: Almas salvajes acechan en la hierba alta!"',
-    },
-    {
-      id: 'sign-dock',
-      x: 4.5,
-      z: -20.0,
-      name: 'Muelle del Sur',
-      text: 'Muelle Marioneta: "Aguas plácidas de Villa Marioneta. El aire huele a salvia y brisa fresca."',
-    },
+    { id: 'sign-town', x: 3.8, z: 1.5, name: 'Villa Marioneta', text: 'VILLA MARIONETA: "Pueblo natal de los Marionetistas."' },
+    { id: 'sign-hero', x: -11.5, z: 9.5, name: 'Casa del Héroe', text: 'Casa de Robin: "La aventura comienza aquí."' },
+    { id: 'sign-rival', x: 11.5, z: 9.5, name: 'Casa de Selene', text: 'Casa de Selene: "¡Atrápame si puedes, vecino!"' },
+    { id: 'sign-lab', x: 7.5, z: -8.0, name: 'Laboratorio de Almas', text: 'LABORATORIO DE ALMAS: "Investigación y consagración."' },
+    { id: 'sign-route1', x: 5.5, z: 26.0, name: 'Ruta 1 Norte', text: 'RUTA 1 NORTE: "Senda del Bosque Sombra."' },
+    { id: 'sign-dock', x: 4.5, z: -20.0, name: 'Muelle del Sur', text: 'Muelle Marioneta: "Aguas plácidas."' },
   ];
 
   const signTex = getTexture('signpost', createSignpostTexture);
@@ -697,25 +597,16 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
     getTexture('tree_2', () => createDenseTreeTexture(2)),
   ];
 
-  const treeMaterials = treeTextures.map(tex => new THREE.SpriteMaterial({
-    map: tex,
-    transparent: true,
-    alphaTest: 0.5,
-  }));
-
+  const treeBillboardMaterials = treeTextures.map(tex => createBillboardMaterial(tex));
   const trees: TreeData[] = [];
-  const treeGroup = new THREE.Group();
-
-  const candidateAttempts = 30;
-  const minSpacing = 6.0;
   const maxTrees = 700;
   const existingPoints: { x: number; z: number }[] = [];
 
   let attempts = 0;
-  while (trees.length < maxTrees && attempts < maxTrees * candidateAttempts) {
+  while (trees.length < maxTrees && attempts < maxTrees * 30) {
     attempts++;
-    const tx = (Math.random() - 0.5) * 380;
-    const tz = (Math.random() - 0.5) * 380;
+    const tx = (rng() - 0.5) * 380;
+    const tz = (rng() - 0.5) * 380;
 
     if (Math.hypot(tx, tz) < 32) continue;
     if (isOnPath(tx, tz)) continue;
@@ -727,125 +618,89 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
     let valid = true;
     for (let i = 0; i < existingPoints.length; i++) {
       const p = existingPoints[i];
-      if (Math.hypot(p.x - tx, p.z - tz) < minSpacing) {
-        valid = false;
-        break;
-      }
+      if (Math.hypot(p.x - tx, p.z - tz) < 6.0) { valid = false; break; }
     }
 
     if (valid) {
       existingPoints.push({ x: tx, z: tz });
       const ty = getTerrainHeight(tx, tz);
-      const variant = Math.floor(Math.random() * 3);
-      const scale = 0.85 + Math.random() * 0.45;
-
-      const tree = new THREE.Sprite(treeMaterials[variant]);
-      const baseScaleH = LUMINATI_SCALE.TREE_WIDTH_BASE * scale;
-      const baseScaleV = LUMINATI_SCALE.TREE_HEIGHT_BASE * scale;
-      tree.scale.set(baseScaleH, baseScaleV, 1);
-      tree.position.set(tx, ty + (baseScaleV * 0.5), tz);
-      treeGroup.add(tree);
-
-      trees.push({
-        x: tx,
-        z: tz,
-        radius: 2.2 * scale,
-        mesh: tree,
-        scale: scale,
-      });
+      const variant = Math.floor(rng() * 3);
+      const scale = 0.85 + rng() * 0.45;
+      trees.push({ x: tx, z: tz, radius: 2.2 * scale, scale, variant });
     }
   }
-  scene.add(treeGroup);
+
+  // Group trees by spatial chunks
+  const treeChunks: { x: number, z: number, meshes: THREE.InstancedMesh[] }[] = [];
+  const chunkSizeVal = 100;
+  const chunkCount = 4; // 400 / 100
+
+  for (let cx = 0; cx < chunkCount; cx++) {
+    for (let cz = 0; cz < chunkCount; cz++) {
+      const minX = -200 + cx * chunkSizeVal;
+      const maxX = minX + chunkSizeVal;
+      const minZ = -200 + cz * chunkSizeVal;
+      const maxZ = minZ + chunkSizeVal;
+
+      const chunkTrees = trees.filter(t => t.x >= minX && t.x < maxX && t.z >= minZ && t.z < maxZ);
+      if (chunkTrees.length === 0) continue;
+
+      const chunkMeshes: THREE.InstancedMesh[] = [];
+      for (let v = 0; v < 3; v++) {
+        const variantTrees = chunkTrees.filter(t => t.variant === v);
+        if (variantTrees.length === 0) continue;
+
+        const iMesh = new THREE.InstancedMesh(billboardGeo, treeBillboardMaterials[v], variantTrees.length);
+        variantTrees.forEach((t, i) => {
+          const baseScaleV = LUMINATI_SCALE.TREE_HEIGHT_BASE * t.scale;
+          const ty = getTerrainHeight(t.x, t.z);
+          dummy.position.set(t.x, ty + (baseScaleV * 0.5), t.z);
+          dummy.scale.set(LUMINATI_SCALE.TREE_WIDTH_BASE * t.scale, baseScaleV, 1);
+          dummy.updateMatrix();
+          iMesh.setMatrixAt(i, dummy.matrix);
+        });
+        scene.add(iMesh);
+        chunkMeshes.push(iMesh);
+      }
+      treeChunks.push({ x: (minX + maxX) / 2, z: (minZ + maxZ) / 2, meshes: chunkMeshes });
+    }
+  }
 
   const sparkleTex = getTexture('sparkle', createSparkleTexture);
-  const sparkleMat = new THREE.SpriteMaterial({
-    map: sparkleTex,
-    transparent: true,
-  });
-
+  const sparkleMat = new THREE.SpriteMaterial({ map: sparkleTex, transparent: true });
   const sparkles: SparkleData[] = [];
   const sparkleGroup = new THREE.Group();
-  const sparkleCount = 120;
-
-  for (let i = 0; i < sparkleCount; i++) {
-    const sx = (Math.random() - 0.5) * 360;
-    const sz = (Math.random() - 0.5) * 360;
+  for (let i = 0; i < 120; i++) {
+    const sx = (rng() - 0.5) * 360;
+    const sz = (rng() - 0.5) * 360;
     if (Math.hypot(sx - lakeX, sz - lakeZ) < 28) continue;
-    const sy = getTerrainHeight(sx, sz) + 1 + Math.random() * 4;
-
+    const sy = getTerrainHeight(sx, sz) + 1 + rng() * 4;
     const sSprite = new THREE.Sprite(sparkleMat);
-    const sScale = (0.8 + Math.random() * 1.2) * 1.3;
-    sSprite.scale.set(sScale * 1.3, sScale * 1.3, 1);
+    const sScale = (0.8 + rng() * 1.2) * 1.3 * 1.3;
+    sSprite.scale.set(sScale, sScale, 1);
     sSprite.position.set(sx, sy, sz);
     sparkleGroup.add(sSprite);
-
-    sparkles.push({
-      mesh: sSprite,
-      baseY: sy,
-      phase: Math.random() * Math.PI * 2,
-      speed: 1.5 + Math.random() * 2,
-    });
+    sparkles.push({ mesh: sSprite, baseY: sy, phase: rng() * Math.PI * 2, speed: 1.5 + rng() * 2 });
   }
   scene.add(sparkleGroup);
 
   const soulColors = ['#38bdf8', '#a855f7', '#ec4899', '#34d399', '#fbbf24', '#f43f5e', '#6366f1', '#14b8a6', '#eab308', '#d946ef'];
-  const soulNames = [
-    'Aethelgard el Valiente', 'Lyra la Tejedorasueños', 'Valthor el Errante', 
-    'Kaelen la Sombra', 'Mirella del Manantial', 'Balthazar el Sabio',
-    'Seraphina la Celeste', 'Orion el Astrónomo', 'Thalia la Musa', 'Zephyr el Viento'
-  ];
-  const soulTitles = [
-    'Alma de Guerrero Caído', 'Alma de Bardo Estelar', 'Alma de Explorador',
-    'Alma de Asesino Silencioso', 'Alma de Ninfa Oculta', 'Alma de Archimago',
-    'Alma de Serafín', 'Alma de Astrólogo', 'Alma de Poeta', 'Alma de Espíritu Libre'
-  ];
-  const soulLores = [
-    'Custodiaba los pasos montañosos antes de la Gran Niebla.',
-    'Sus cantos aún resuenan en las noches de luna llena.',
-    'Cruzó los abismos estelares buscando el origen de los mundos.',
-    'Guardiana de los secretos olvidados en el tiempo.',
-    'Su lágrima formó el manantial azul que brota en el valle.',
-    'Conoció los mil nombres de las estrellas errantes.',
-    'Desplegó sus alas de cristal cuando el cielo nocturno despertó.',
-    'Mapeó constelaciones que ya no existen en los cielos modernos.',
-    'Escribió versos que enamoraron a los dioses antiguos.',
-    'Danza con las brisas frías de los páramos del norte.'
-  ];
-
+  const soulNames = ['Aethelgard', 'Lyra', 'Valthor', 'Kaelen', 'Mirella', 'Balthazar', 'Seraphina', 'Orion', 'Thalia', 'Zephyr'];
+  
   const soulDolls: SoulDoll[] = [];
   const soulGroup = new THREE.Group();
   const soulMeshes: THREE.Sprite[] = [];
-
   for (let i = 0; i < 10; i++) {
     let sx = 0, sz = 0;
     do {
-      const angle = (i / 10) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-      const dist = 60 + Math.random() * 120;
+      const angle = (i / 10) * Math.PI * 2 + (rng() - 0.5) * 0.5;
+      const dist = 60 + rng() * 120;
       sx = Math.cos(angle) * dist;
       sz = Math.sin(angle) * dist;
     } while (isOnPath(sx, sz) || Math.hypot(sx - lakeX, sz - lakeZ) < 30);
-
     const sy = getTerrainHeight(sx, sz) + 2;
-    const col = soulColors[i];
-
-    const soul: SoulDoll = {
-      id: `soul-${i}`,
-      x: sx,
-      z: sz,
-      y: sy,
-      name: soulNames[i],
-      title: soulTitles[i],
-      lore: soulLores[i],
-      color: col,
-      collected: false,
-      floatOffset: Math.random() * Math.PI * 2,
-    };
-    soulDolls.push(soul);
-
-    const mat = new THREE.SpriteMaterial({
-      map: getTexture(`soul_${col}`, () => createSoulDollTexture(col)),
-      transparent: true,
-    });
+    soulDolls.push({ id: `soul-${i}`, x: sx, z: sz, y: sy, name: soulNames[i], collected: false, floatOffset: rng() * Math.PI * 2, color: soulColors[i], title: '', lore: '' });
+    const mat = new THREE.SpriteMaterial({ map: getTexture(`soul_${soulColors[i]}`, () => createSoulDollTexture(soulColors[i])), transparent: true });
     const sprite = new THREE.Sprite(mat);
     sprite.scale.set(LUMINATI_SCALE.SOUL_DOLL_SIZE, LUMINATI_SCALE.SOUL_DOLL_SIZE, 1);
     sprite.position.set(sx, sy + 2.0, sz);
@@ -856,24 +711,11 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
 
   const spirits: Spirit[] = [];
   const spiritMeshes: THREE.Sprite[] = [];
-  const spiritTex = getTexture('spirit_orb', createSpiritTexture);
-  const spiritMat = new THREE.SpriteMaterial({
-    map: spiritTex,
-    transparent: true,
-  });
-
+  const spiritMat = new THREE.SpriteMaterial({ map: getTexture('spirit_orb', createSpiritTexture), transparent: true });
   for (let i = 0; i < 8; i++) {
-    const sx = (Math.random() - 0.5) * 220;
-    const sz = (Math.random() - 0.5) * 220;
-    spirits.push({
-      id: `spirit-${i}`,
-      x: sx,
-      z: sz,
-      vx: (Math.random() - 0.5) * 4,
-      vz: (Math.random() - 0.5) * 4,
-      radius: 3,
-    });
-
+    const sx = (rng() - 0.5) * 220;
+    const sz = (rng() - 0.5) * 220;
+    spirits.push({ id: `spirit-${i}`, x: sx, z: sz, vx: (rng() - 0.5) * 4, vz: (rng() - 0.5) * 4, radius: 3 });
     const sSprite = new THREE.Sprite(spiritMat);
     sSprite.scale.set(4.5, 4.5, 1);
     scene.add(sSprite);
@@ -885,103 +727,73 @@ export function buildWorld(scene: THREE.Scene, camera: THREE.PerspectiveCamera):
   const setTimeOfDay = (t: number) => {
     const currentSky = nightColor.clone().lerp(dayColor, t);
     scene.background = currentSky;
-    if (scene.fog) {
-      scene.fog.color = currentSky;
-    }
-
+    if (scene.fog) scene.fog.color = currentSky;
     hemi.intensity = THREE.MathUtils.lerp(0.95, 1.3, t);
     moonLight.intensity = THREE.MathUtils.lerp(1.35, 0.4, t);
     moonMat.opacity = THREE.MathUtils.lerp(1.0, 0.0, t);
     starsMat.opacity = THREE.MathUtils.lerp(1.0, 0.0, t);
-
     const grassColor = new THREE.Color().setHSL(0.55, 0.82, THREE.MathUtils.lerp(0.48, 0.68, t));
-    grassTufts.forEach(gt => {
-      gt.mesh.material.color = grassColor;
-    });
+    grassInstancedMat.uniforms.diffuse.value = grassColor;
+    treeBillboardMaterials.forEach(m => m.uniforms.diffuse.value = grassColor);
   };
+
+  // Spatial chunking parameters
+  const chunkSize = 50;
+  const loadRadius = 2.5; // chunks
+  const unloadRadius = 3.5;
 
   const updateWorld = (delta: number, playerX: number, playerZ: number) => {
     timeElapsed += delta;
+    grassInstancedMat.uniforms.time.value = timeElapsed;
 
-    const cullingDistSq = 120 * 120;
-    trees.forEach(tree => {
-      const distSq = (tree.x - playerX) ** 2 + (tree.z - playerZ) ** 2;
-      tree.mesh.visible = distSq <= cullingDistSq;
+    // Visibility management (chunking-like logic)
+    const treeLoadRadius = 180;
+    treeChunks.forEach(chunk => {
+      const dist = Math.hypot(chunk.x - playerX, chunk.z - playerZ);
+      const visible = dist < treeLoadRadius;
+      chunk.meshes.forEach(m => m.visible = visible);
     });
 
     soulMeshes.forEach((mesh, idx) => {
       const s = soulDolls[idx];
       if (!s.collected) {
-        const floatY = s.y + Math.sin(timeElapsed * 3 + s.floatOffset) * 0.8;
-        mesh.position.y = floatY;
+        mesh.position.y = s.y + Math.sin(timeElapsed * 3 + s.floatOffset) * 0.8;
       } else {
         mesh.visible = false;
       }
     });
 
     spirits.forEach((sp, idx) => {
-      sp.x += sp.vx * delta;
-      sp.z += sp.vz * delta;
-
+      sp.x += sp.vx * delta; sp.z += sp.vz * delta;
       if (Math.abs(sp.x) > 180) sp.vx *= -1;
       if (Math.abs(sp.z) > 180) sp.vz *= -1;
-
-      const sy = getTerrainHeight(sp.x, sp.z) + 4.225 + Math.sin(timeElapsed * 4 + idx) * 0.5; // 3.25 * 1.3
-      spiritMeshes[idx].position.set(sp.x, sy, sp.z);
+      spiritMeshes[idx].position.set(sp.x, getTerrainHeight(sp.x, sp.z) + 4.225 + Math.sin(timeElapsed * 4 + idx) * 0.5, sp.z);
     });
 
     enemies.forEach((en, idx) => {
-      if (!en.alive) {
-        enemySprites[idx].visible = false;
-        return;
-      }
+      if (!en.alive) { enemySprites[idx].visible = false; return; }
       const angle = timeElapsed * en.speed * 0.5 + idx;
       en.x = en.startX + Math.cos(angle) * en.patrolDist;
       en.z = en.startZ + Math.sin(angle) * en.patrolDist;
-      const ey = getTerrainHeight(en.x, en.z) + 2.0;
-      enemySprites[idx].position.set(en.x, ey, en.z);
+      enemySprites[idx].position.set(en.x, getTerrainHeight(en.x, en.z) + 2.0, en.z);
     });
 
     chests.forEach((c, idx) => {
-      if (c.opened) {
-        chestSprites[idx].material.map = openChestTex;
-        chestSprites[idx].material.needsUpdate = true;
-      }
-    });
-
-    grassTufts.forEach(gt => {
-      const sway = Math.sin(timeElapsed * 4 + gt.phase) * 0.15;
-      gt.mesh.position.x = gt.x + sway;
+      if (c.opened) { chestSprites[idx].material.map = openChestTex; chestSprites[idx].material.needsUpdate = true; }
     });
 
     sparkles.forEach(sp => {
-      const currentY = sp.baseY + Math.sin(timeElapsed * sp.speed + sp.phase) * 0.6;
-      sp.mesh.position.y = currentY;
-      const opacity = 0.5 + Math.sin(timeElapsed * 5 + sp.phase) * 0.5;
-      sp.mesh.material.opacity = opacity;
+      sp.mesh.position.y = sp.baseY + Math.sin(timeElapsed * sp.speed + sp.phase) * 0.6;
+      sp.mesh.material.opacity = 0.5 + Math.sin(timeElapsed * 5 + sp.phase) * 0.5;
     });
 
-    fountains.forEach(f => {
-      if (f.orbMesh) {
-        f.orbMesh.position.y = f.baseY + Math.sin(timeElapsed * 3 + f.x) * 0.25;
-      }
-    });
+    fountains.forEach(f => { if (f.orbMesh) f.orbMesh.position.y = f.baseY + Math.sin(timeElapsed * 3 + f.x) * 0.25; });
   };
 
   return {
-    soulDolls,
-    spirits,
-    trees,
-    collisionBoxes,
-    lakeCenter: { x: lakeX, z: lakeZ },
-    npcs,
-    chests,
-    enemies,
-    grassPatches,
-    fountains: fountains.map(f => ({ x: f.x, z: f.z, radius: f.radius })),
-    signposts,
-    isInsideGrass,
-    updateWorld,
-    setTimeOfDay,
+    soulDolls, spirits, trees, collisionBoxes, lakeCenter: { x: lakeX, z: lakeZ },
+    npcs, chests, enemies, grassPatches, fountains: fountains.map(f => ({ x: f.x, z: f.z, radius: f.radius })),
+    signposts, isInsideGrass, updateWorld, setTimeOfDay,
   };
 }
+

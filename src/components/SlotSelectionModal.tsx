@@ -84,8 +84,12 @@ export const SlotSelectionModal: React.FC<SlotSelectionModalProps> = ({ onSelect
                   onClick={() => {
                     const json = prompt('Pega el JSON de tu partida:');
                     if (json) {
-                      SaveManager.importSave(index, json);
-                      refreshSlots();
+                      try {
+                        SaveManager.importSave(index, json);
+                        refreshSlots();
+                      } catch (e: any) {
+                        alert(`Error al importar: ${e.message}`);
+                      }
                     }
                   }}
                   className="mt-2 text-[10px] text-[#94b3c1] hover:text-[#f4f4f4] underline uppercase block w-full text-center"

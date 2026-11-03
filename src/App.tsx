@@ -247,13 +247,13 @@ export default function App() {
         setInventory(currentInv);
         setActiveDialogue(dialogue);
         setQuestState(quest);
-        setAllSouls([...engine['soulDolls']]);
+        setAllSouls([...engine.getSoulDolls()]);
         if (posAndRot) setPlayerPosAndRot(posAndRot);
         if (grassIdxs) setDiscoveredGrass([...grassIdxs]);
       },
       (soul: SoulDoll) => {
         setLastCollectedSoul(soul);
-        setAllSouls([...engine['soulDolls']]);
+        setAllSouls([...engine.getSoulDolls()]);
       },
       (rival: BattleSoul, intro: string) => {
         // Register soul as seen in Luminadex
@@ -307,14 +307,14 @@ export default function App() {
         starterChosen: starterChosen,
         discoveredSouls: discoveredSouls,
         discoveredGrass: discoveredGrass,
-        openedChests: chestsRef.current.filter(c => c.opened).map(c => c.id)
+        openedChests: engine.getChests().filter(c => c.opened).map(c => c.id)
       })
     );
 
     engine.setActiveSlot(activeSlot);
 
     engineRef.current = engine;
-    setAllSouls([...engine['soulDolls']]);
+    setAllSouls([...engine.getSoulDolls()]);
     setGrassPatches(engine.getGrassPatches());
     setLakeCenter(engine.getLakeCenter());
     setFountains(engine.getFountains());

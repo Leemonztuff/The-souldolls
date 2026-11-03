@@ -34,6 +34,18 @@ class AudioManager {
     return this.enabled;
   }
 
+  public pauseAll() {
+    if (this.ctx && this.ctx.state === 'running') {
+      this.ctx.suspend();
+    }
+  }
+
+  public resumeAll() {
+    if (this.enabled && this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
   public playFootstep() {
     if (!this.enabled) return;
     try {

@@ -143,6 +143,53 @@ export const BASIC_STRUGGLE_MOVE: BattleMove = {
   description: 'Ataque básico cuando se agotan los PP.',
 };
 
+export const SHADER_ATTACK_MOVES: Record<string, BattleMove> = {
+  lava: {
+    id: 'mv_lava',
+    name: 'Furia Volcánica',
+    type: 'Fuego',
+    power: 65,
+    pp: 12,
+    maxPp: 12,
+    accuracy: 95,
+    description: 'Esfera de magma incandescente con corteza quebrada y ríos de lava ardiente.',
+    shaderVfx: 'lava',
+  },
+  water: {
+    id: 'mv_water',
+    name: 'Orbe Marino',
+    type: 'Agua',
+    power: 62,
+    pp: 14,
+    maxPp: 14,
+    accuracy: 100,
+    description: 'Esfera de agua pura refractiva con ondulaciones e impacto torrencial.',
+    shaderVfx: 'water',
+  },
+  slime: {
+    id: 'mv_slime',
+    name: 'Cieno Hirviente',
+    type: 'Planta',
+    power: 60,
+    pp: 15,
+    maxPp: 15,
+    accuracy: 95,
+    description: 'Masa ácida viscosa que hierve en la superficie y gotea veneno corrosivo.',
+    shaderVfx: 'slime',
+  },
+  blackhole: {
+    id: 'mv_blackhole',
+    name: 'Singularidad Umbría',
+    type: 'Sombra',
+    power: 75,
+    pp: 8,
+    maxPp: 8,
+    accuracy: 90,
+    description: 'Agujero negro con disco de acreción violeta que devora la luz y la materia.',
+    shaderVfx: 'blackhole',
+  },
+};
+
 export function getDefaultPlayerSoul(): BattleSoul {
   return getStarterSouls()[1];
 }
@@ -168,7 +215,9 @@ export function getStarterSouls(): BattleSoul[] {
       rarity: 'común',
       moves: [
         { id: 'r1', name: 'Ember Breath', type: 'Fuego', power: 40, pp: 20, maxPp: 20, accuracy: 100, description: 'Exhala una llamarada carmesí.' },
+        { ...SHADER_ATTACK_MOVES.lava },
         { id: 'r2', name: 'Garra Ígnea', type: 'Fuego', power: 48, pp: 15, maxPp: 15, accuracy: 95, description: 'Desgarro envuelto en fuego ardiente.' },
+        { ...SHADER_ATTACK_MOVES.blackhole },
       ],
     },
     {
@@ -190,7 +239,9 @@ export function getStarterSouls(): BattleSoul[] {
       rarity: 'común',
       moves: [
         { id: 't1', name: 'Tajo Acuático', type: 'Agua', power: 42, pp: 20, maxPp: 20, accuracy: 100, description: 'Corta con una hoja de agua pura.' },
+        { ...SHADER_ATTACK_MOVES.water },
         { id: 't2', name: 'Pulso Frío', type: 'Agua', power: 36, pp: 20, maxPp: 20, accuracy: 100, description: 'Onda glacial que enfría al rival.' },
+        { ...SHADER_ATTACK_MOVES.lava },
       ],
     },
     {
@@ -212,7 +263,9 @@ export function getStarterSouls(): BattleSoul[] {
       rarity: 'común',
       moves: [
         { id: 'f1', name: 'Látigo Cepa', type: 'Planta', power: 40, pp: 20, maxPp: 20, accuracy: 100, description: 'Azota con lianas espinosas.' },
+        { ...SHADER_ATTACK_MOVES.slime },
         { id: 'f2', name: 'Hoja Afilada', type: 'Planta', power: 50, pp: 15, maxPp: 15, accuracy: 95, description: 'Ráfaga de follaje cortante.' },
+        { ...SHADER_ATTACK_MOVES.blackhole },
       ],
     },
   ];
@@ -250,16 +303,16 @@ export function getDefaultBag(): BagItem[] {
 export const LEARNABLE_MOVES: Record<string, { level: number; move: BattleMove }[]> = {
   Fuego: [
     { level: 5, move: { id: 'f_5', name: 'Garra Ígnea', type: 'Fuego', power: 48, pp: 15, maxPp: 15, accuracy: 95, description: 'Desgarro ardiente.' } },
-    { level: 10, move: { id: 'f_10', name: 'Furia Espectral', type: 'Sombra', power: 55, pp: 10, maxPp: 10, accuracy: 90, description: 'Fuego sombrío concentrado.' } },
+    { level: 10, move: { ...SHADER_ATTACK_MOVES.lava } },
     { level: 15, move: { id: 'f_15', name: 'Llamarada Ancestral', type: 'Fuego', power: 75, pp: 5, maxPp: 5, accuracy: 85, description: 'Explosión de fuego volcánico.' } },
   ],
   Agua: [
-    { level: 5, move: { id: 'w_5', name: 'Pulso Frío', type: 'Agua', power: 38, pp: 20, maxPp: 20, accuracy: 100, description: 'Onda glacial.' } },
+    { level: 5, move: { ...SHADER_ATTACK_MOVES.water } },
     { level: 10, move: { id: 'w_10', name: 'Danza Espada', type: 'Luz', power: 50, pp: 10, maxPp: 10, accuracy: 95, description: 'Filo luminoso acuático.' } },
     { level: 15, move: { id: 'w_15', name: 'Hidrobomba', type: 'Agua', power: 80, pp: 5, maxPp: 5, accuracy: 85, description: 'Torrente a alta presión descomunal.' } },
   ],
   Planta: [
-    { level: 5, move: { id: 'p_5', name: 'Hoja Afilada', type: 'Planta', power: 46, pp: 15, maxPp: 15, accuracy: 95, description: 'Hojas navajas.' } },
+    { level: 5, move: { ...SHADER_ATTACK_MOVES.slime } },
     { level: 10, move: { id: 'p_10', name: 'Danza Sombra', type: 'Sombra', power: 50, pp: 10, maxPp: 10, accuracy: 90, description: 'Maleza espectral.' } },
     { level: 15, move: { id: 'p_15', name: 'Rayo Solar', type: 'Luz', power: 75, pp: 5, maxPp: 5, accuracy: 90, description: 'Haz celestial cargado de fotosíntesis.' } },
   ],
@@ -270,7 +323,7 @@ export const LEARNABLE_MOVES: Record<string, { level: number; move: BattleMove }
   ],
   Sombra: [
     { level: 5, move: { id: 's_5', name: 'Aguja Sombría', type: 'Sombra', power: 45, pp: 20, maxPp: 20, accuracy: 100, description: 'Espina tenebrosa.' } },
-    { level: 10, move: { id: 's_10', name: 'Beso Tenebroso', type: 'Sombra', power: 55, pp: 10, maxPp: 10, accuracy: 90, description: 'Drena energía espiritual.' } },
+    { level: 10, move: { ...SHADER_ATTACK_MOVES.blackhole } },
     { level: 15, move: { id: 's_15', name: 'Vacío Abisal', type: 'Sombra', power: 80, pp: 5, maxPp: 5, accuracy: 85, description: 'Colapso de gravedad umbría.' } },
   ],
   Luz: [
@@ -317,8 +370,9 @@ export const WILD_SOULS: WildSoulTemplate[] = [
     introText: '¡ Runika acecha en la oscura mazmorra con mirada desafiante!',
     moves: [
       { id: 'r1', name: 'Ember Breath', type: 'Fuego', power: 40, pp: 20, maxPp: 20, accuracy: 100, description: 'Exhala una llamarada carmesí.' },
+      { ...SHADER_ATTACK_MOVES.lava },
       { id: 'r2', name: 'Garra Ígnea', type: 'Fuego', power: 48, pp: 15, maxPp: 15, accuracy: 95, description: 'Desgarro envuelto en fuego ardiente.' },
-      { id: 'r3', name: 'Furia Espectral', type: 'Sombra', power: 45, pp: 10, maxPp: 10, accuracy: 90, description: 'Ataque con energía oscura de la mazmorra.' },
+      { ...SHADER_ATTACK_MOVES.blackhole },
     ],
   },
   {
@@ -334,8 +388,9 @@ export const WILD_SOULS: WildSoulTemplate[] = [
     introText: '¡ Aquelle surge entre la bruma con elegancia serena!',
     moves: [
       { id: 'a1', name: 'Burbuja Letal', type: 'Agua', power: 36, pp: 25, maxPp: 25, accuracy: 100, description: 'Dispara esferas acuáticas a presión.' },
+      { ...SHADER_ATTACK_MOVES.water },
       { id: 'a2', name: 'Gota Cortante', type: 'Agua', power: 44, pp: 15, maxPp: 15, accuracy: 95, description: 'Lanza navajas de agua comprimida.' },
-      { id: 'a3', name: 'Chispa Astral', type: 'Luz', power: 40, pp: 15, maxPp: 15, accuracy: 100, description: 'Destello cegador que desorienta.' },
+      { ...SHADER_ATTACK_MOVES.slime },
     ],
   },
   {
@@ -351,8 +406,9 @@ export const WILD_SOULS: WildSoulTemplate[] = [
     introText: '¡ Floraya hace crujir la maleza con su aura silvestre!',
     moves: [
       { id: 'f1', name: 'Látigo Cepa', type: 'Planta', power: 40, pp: 20, maxPp: 20, accuracy: 100, description: 'Azota con lianas espinosas.' },
+      { ...SHADER_ATTACK_MOVES.slime },
       { id: 'f2', name: 'Hoja Afilada', type: 'Planta', power: 48, pp: 15, maxPp: 15, accuracy: 95, description: 'Ráfaga de hojas cortantes como navajas.' },
-      { id: 'f3', name: 'Danza Sombra', type: 'Sombra', power: 38, pp: 15, maxPp: 15, accuracy: 100, description: 'Se funde en las sombras para golpear.' },
+      { ...SHADER_ATTACK_MOVES.blackhole },
     ],
   },
   {
@@ -369,7 +425,7 @@ export const WILD_SOULS: WildSoulTemplate[] = [
     moves: [
       { id: 'v1', name: 'Impactrueno', type: 'Rayo', power: 45, pp: 20, maxPp: 20, accuracy: 100, description: 'Descarga eléctrica concentrada.' },
       { id: 'v2', name: 'Chispa Voltífera', type: 'Rayo', power: 58, pp: 10, maxPp: 10, accuracy: 95, description: 'Relámpago rápido y ensordecedor.' },
-      { id: 'v3', name: 'Embestida Férrea', type: 'Luz', power: 42, pp: 15, maxPp: 15, accuracy: 95, description: 'Golpe físico con armadura.' },
+      { ...SHADER_ATTACK_MOVES.lava },
     ],
   },
   {
@@ -385,8 +441,9 @@ export const WILD_SOULS: WildSoulTemplate[] = [
     introText: '¡ Noctis emerge de las tinieblas de la mazmorra!',
     moves: [
       { id: 'n1', name: 'Aguja Sombría', type: 'Sombra', power: 46, pp: 20, maxPp: 20, accuracy: 100, description: 'Proyectiles de oscuridad pura.' },
+      { ...SHADER_ATTACK_MOVES.blackhole },
       { id: 'n2', name: 'Beso Tenebroso', type: 'Sombra', power: 55, pp: 10, maxPp: 10, accuracy: 90, description: 'Drena la vitalidad del oponente.' },
-      { id: 'n3', name: 'Pulso Carmesí', type: 'Fuego', power: 42, pp: 15, maxPp: 15, accuracy: 95, description: 'Llama oscura que abrasa.' },
+      { ...SHADER_ATTACK_MOVES.slime },
     ],
   },
 ];

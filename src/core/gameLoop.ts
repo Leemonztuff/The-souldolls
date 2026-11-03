@@ -1,14 +1,10 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 export class GameLoop {
   private animationFrameId: number = 0;
   private lastTime: number = performance.now();
   private accumulator: number = 0;
-  private readonly timeStep: number = 1 / 60; // 60 FPS fixed logic
-  private readonly maxDt: number = 0.1; // Max 0.1s to prevent tab-switch teleporting
+  private readonly timeStep: number = 1 / 60; 
+  private readonly maxDt: number = 0.1; 
+  private paused: boolean = false;
 
   private updateCallback: (dt: number) => void;
   private renderCallback: (alpha: number) => void;
@@ -19,8 +15,10 @@ export class GameLoop {
   }
 
   public start() {
+    this.paused = false;
     this.lastTime = performance.now();
     const loop = (currentTime: number) => {
+      if (this.paused) return;
       this.animationFrameId = requestAnimationFrame(loop);
 
       const rawDt = (currentTime - this.lastTime) / 1000;
@@ -41,9 +39,21 @@ export class GameLoop {
     this.animationFrameId = requestAnimationFrame(loop);
   }
 
-  public stop() {
+  public pause() {
+    this.paused = true;
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
     }
+  }
+
+  public resume() {
+    if (!this.paused) return;
+    this.paused = false;
+    this.lastTime = performance.now(); // Reset lastTime to avoid jump
+    this.start();
+  }
+
+  public stop() {
+    this.pause();
   }
 }

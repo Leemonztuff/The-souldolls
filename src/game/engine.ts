@@ -4,7 +4,7 @@
  */
 
 import * as THREE from 'three';
-import { GameState, SoulDoll, NPC, Chest, Enemy, InventoryItem, BattleSoul, ItemId, GrassPatch, Signpost } from '../types';
+import { GameState, SoulDoll, NPC, Chest, Enemy, InventoryItem, BattleSoul, ItemId, GrassPatch, Signpost, GameSaveData } from '../types';
 import { buildWorld, getTerrainHeight, TreeData, CollisionBox, FountainData } from '../world/worldGen';
 import { disposeTextures } from '../world/textureManager';
 import { PlayerController } from '../world/playerController';
@@ -22,6 +22,8 @@ import { GAME_CONSTANTS } from '../data/constants';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+
+import { ObjectPool } from '../core/pool';
 
 interface DustParticle {
   mesh: THREE.Sprite;
@@ -76,7 +78,9 @@ export class GameEngine {
   private velocityX: number = 0;
   private velocityZ: number = 0;
   private isSprintingMobile: boolean = false;
-  private dustParticles: DustParticle[] = [];
+  
+  private activeDustParticles: DustParticle[] = [];
+  private dustPool: ObjectPool<THREE.Sprite>;
   private dustTimer: number = 0;
 
   private gameState: GameState = 'title';
@@ -141,7 +145,6 @@ export class GameEngine {
     this.onItemReward = onItemReward;
     this.getSaveData = getSaveData || (() => ({}));
 
-
     // 1. Renderer setup
     this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -154,20 +157,17 @@ export class GameEngine {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
 
-    // EffectComposer & UnrealBloomPass for atmospheric glow
     this.composer = new EffectComposer(this.renderer);
     const renderPass = new RenderPass(this.scene, this.camera);
     this.composer.addPass(renderPass);
 
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(container.clientWidth, container.clientHeight),
-      0.65,
-      0.4,
-      0.85
+      0.65, 0.4, 0.85
     );
     this.composer.addPass(bloomPass);
 
-    // 3. Core modules (Input, State Machine, Game Loop)
+    // 3. Core modules
     this.inputManager = new InputManager(this.renderer.domElement);
     this.stateMachine = new StateMachine();
     this.debugManager = new DebugManager(this);
@@ -200,30 +200,27 @@ export class GameEngine {
     this.exclamationSprite.visible = false;
     this.scene.add(this.exclamationSprite);
 
+    // Dust Pooling
     const dustTex = createDustTexture();
-    for (let i = 0; i < 16; i++) {
-      const dMat = new THREE.SpriteMaterial({
-        map: dustTex,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-      });
-      const dSprite = new THREE.Sprite(dMat);
-      dSprite.scale.set(0.6, 0.6, 1);
-      dSprite.visible = false;
-      this.scene.add(dSprite);
-      this.dustParticles.push({
-        mesh: dSprite,
-        life: 0,
-        maxLife: 0.45,
-        vx: 0,
-        vy: 0,
-        vz: 0,
-      });
-    }
+    this.dustPool = new ObjectPool<THREE.Sprite>(
+      () => {
+        const mat = new THREE.SpriteMaterial({ map: dustTex, transparent: true, opacity: 0, depthWrite: false });
+        const s = new THREE.Sprite(mat);
+        s.scale.set(0.6, 0.6, 1);
+        s.visible = false;
+        this.scene.add(s);
+        return s;
+      },
+      (s) => {
+        s.visible = false;
+        (s.material as THREE.SpriteMaterial).opacity = 0;
+      },
+      16
+    );
 
     this.initEventListeners();
     this.onWindowResize();
+
     window.addEventListener('resize', this.onWindowResize);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
@@ -367,8 +364,27 @@ export class GameEngine {
 
   private handleVisibilityChange = () => {
     if (document.visibilityState === 'hidden') {
-      // this.saveGame();
+      this.gameLoop.pause();
+      audioManager.pauseAll? audioManager.pauseAll() : null;
+    } else {
+      this.gameLoop.resume();
+      audioManager.resumeAll? audioManager.resumeAll() : null;
     }
+  };
+
+  private handleContextLost = (e: Event) => {
+    e.preventDefault();
+    console.warn('[Engine] WebGL Context Lost');
+    this.gameLoop.pause();
+    // Show overlay or notify user if needed
+  };
+
+  private handleContextRestored = () => {
+    console.log('[Engine] WebGL Context Restored. Reconstructing...');
+    this.renderer.setAnimationLoop(null);
+    // In a real app we might need to recreate materials/textures here.
+    // Three.js handles most of it if we don't dispose things prematurely.
+    this.gameLoop.resume();
   };
 
   private initEventListeners() {
@@ -377,6 +393,9 @@ export class GameEngine {
     dom.addEventListener('mousedown', this.handleMouseDown);
     dom.addEventListener('touchstart', this.handleTouchStart, { passive: true });
     
+    dom.addEventListener('webglcontextlost', this.handleContextLost, false);
+    dom.addEventListener('webglcontextrestored', this.handleContextRestored, false);
+
     window.addEventListener('resize', this.onWindowResize);
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
@@ -627,11 +646,9 @@ export class GameEngine {
 
     for (let i = 0; i < this.trees.length; i++) {
       const tree = this.trees[i];
-      if (tree.mesh.visible) {
-        const dist = Math.hypot(tree.x - testX, tree.z - testZ);
-        if (dist < tree.radius + playerRadius) {
-          return true;
-        }
+      const dist = Math.hypot(tree.x - testX, tree.z - testZ);
+      if (dist < tree.radius + playerRadius) {
+        return true;
       }
     }
 
@@ -656,21 +673,24 @@ export class GameEngine {
   }
 
   private spawnDustParticle(x: number, y: number, z: number, isSprinting: boolean) {
-    const p = this.dustParticles.find(dp => !dp.mesh.visible);
-    if (!p) return;
-    p.mesh.visible = true;
-    p.mesh.position.set(
+    const mesh = this.dustPool.get();
+    mesh.visible = true;
+    mesh.position.set(
       x + (Math.random() - 0.5) * 0.5,
       y + 0.15,
       z + (Math.random() - 0.5) * 0.5
     );
-    p.life = 0;
-    p.maxLife = isSprinting ? 0.32 : 0.42;
-    p.vx = (Math.random() - 0.5) * 0.6;
-    p.vy = 0.5 + Math.random() * 0.4;
-    p.vz = (Math.random() - 0.5) * 0.6;
-    p.mesh.scale.set(0.45, 0.45, 1);
-    (p.mesh.material as THREE.SpriteMaterial).opacity = 0.75;
+    mesh.scale.set(0.45, 0.45, 1);
+    (mesh.material as THREE.SpriteMaterial).opacity = 0.75;
+    
+    this.activeDustParticles.push({
+      mesh,
+      life: 0,
+      maxLife: isSprinting ? 0.32 : 0.42,
+      vx: (Math.random() - 0.5) * 0.6,
+      vy: 0.5 + Math.random() * 0.4,
+      vz: (Math.random() - 0.5) * 0.6,
+    });
   }
 
   private update(dt: number) {
@@ -693,7 +713,7 @@ export class GameEngine {
       }
     }
 
-    // State machine update: Outside world state, world doesn't update logic
+    // State machine update
     if (this.stateMachine.getState() === 'world') {
       this.updateWorldLogic(dt);
     }
@@ -760,7 +780,6 @@ export class GameEngine {
       const testBothX = Math.max(-190, Math.min(190, prevX + stepX));
       const testBothZ = Math.max(-190, Math.min(190, prevZ + stepZ));
 
-      // Midpoint check for better collision at high speeds
       const midX = (prevX + testBothX) * 0.5;
       const midZ = (prevZ + testBothZ) * 0.5;
       const midCollision = this.checkPointCollision(midX, midZ);
@@ -817,21 +836,20 @@ export class GameEngine {
       this.velocityZ = 0;
     }
 
-    for (let i = 0; i < this.dustParticles.length; i++) {
-      const p = this.dustParticles[i];
-      if (p.mesh.visible) {
-        p.life += dt;
-        if (p.life >= p.maxLife) {
-          p.mesh.visible = false;
-        } else {
-          p.mesh.position.x += p.vx * dt;
-          p.mesh.position.y += p.vy * dt;
-          p.mesh.position.z += p.vz * dt;
-          const progress = p.life / p.maxLife;
-          (p.mesh.material as THREE.SpriteMaterial).opacity = (1 - progress) * 0.75;
-          const s = 0.45 + progress * 0.35;
-          p.mesh.scale.set(s, s, 1);
-        }
+    for (let i = this.activeDustParticles.length - 1; i >= 0; i--) {
+      const p = this.activeDustParticles[i];
+      p.life += dt;
+      if (p.life >= p.maxLife) {
+        this.dustPool.release(p.mesh);
+        this.activeDustParticles.splice(i, 1);
+      } else {
+        p.mesh.position.x += p.vx * dt;
+        p.mesh.position.y += p.vy * dt;
+        p.mesh.position.z += p.vz * dt;
+        const progress = p.life / p.maxLife;
+        (p.mesh.material as THREE.SpriteMaterial).opacity = (1 - progress) * 0.75;
+        const s = 0.45 + progress * 0.35;
+        p.mesh.scale.set(s, s, 1);
       }
     }
 
@@ -994,8 +1012,16 @@ export class GameEngine {
     return this.grassPatches;
   }
 
+  public getSoulDolls(): SoulDoll[] {
+    return this.soulDolls;
+  }
+
   public getDiscoveredGrass(): number[] {
     return this.discoveredGrass;
+  }
+
+  public getChests(): Chest[] {
+    return this.chests;
   }
 
   public getFountains(): FountainData[] {
@@ -1050,11 +1076,28 @@ export class GameEngine {
     const dom = this.renderer.domElement;
     dom.removeEventListener('mousedown', this.handleMouseDown);
     dom.removeEventListener('touchstart', this.handleTouchStart);
+    dom.removeEventListener('webglcontextlost', this.handleContextLost);
+    dom.removeEventListener('webglcontextrestored', this.handleContextRestored);
     
     if (this.container && this.container.contains(dom)) {
         this.container.removeChild(dom);
     }
     
+    // Thorough cleanup of all 3D resources
+    this.scene.traverse((obj) => {
+      if (obj instanceof THREE.Mesh || obj instanceof THREE.InstancedMesh || obj instanceof THREE.Sprite) {
+        if (obj.geometry) obj.geometry.dispose();
+        
+        if (obj.material) {
+          if (Array.isArray(obj.material)) {
+            obj.material.forEach(m => m.dispose());
+          } else {
+            obj.material.dispose();
+          }
+        }
+      }
+    });
+
     disposeTextures();
     if (this.composer) {
       this.composer.dispose();

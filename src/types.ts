@@ -89,6 +89,7 @@ export interface BattleMove {
   maxPp: number;
   accuracy: number;
   description: string;
+  shaderVfx?: 'lava' | 'water' | 'slime' | 'blackhole';
 }
 
 export interface BattleSoul {
